@@ -134,7 +134,7 @@ $ cargo run --example cookbook-read-serde < examples/data/smallpop.csv
 
 ```kotlin
 dependencies {
-    implementation("io.github.kotlinmania:csv-kotlin:0.1.0")
+    implementation("io.github.kotlinmania:csv-kotlin:0.1.0-SNAPSHOT")
 }
 ```
 

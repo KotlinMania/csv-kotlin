@@ -209,7 +209,11 @@ kotlin {
         binaries.framework { baseName = "Csv"; xcf.add(this) }
     }
     iosSimulatorArm64 {
-        binaries.framework { baseName = "Csv"; xcf.add(this) }
+        binaries.framework {
+            baseName = "Csv"
+            isStatic = true
+            xcf.add(this)
+        }
     }
     iosX64 {
         binaries.framework { baseName = "Csv"; xcf.add(this) }

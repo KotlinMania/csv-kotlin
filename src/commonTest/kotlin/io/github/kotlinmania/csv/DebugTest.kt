@@ -1,4 +1,4 @@
-// port-lint: ignore — common tests for the `debug` module
+// port-lint: ignore - common tests for the `debug` module
 package io.github.kotlinmania.csv
 
 import kotlin.test.Test
@@ -68,5 +68,26 @@ class DebugTest {
         val r = utf8Decode(ubyteArrayOf(0x80u))
         assertTrue(r is Utf8DecodeResult.Err)
         assertEquals(0x80u.toUByte(), r.byte)
+    }
+
+    @Test
+    fun utf8DecodeErrForTruncatedMultiByteSequence() {
+        val r = utf8Decode(ubyteArrayOf(0xE2u, 0x82u))
+        assertTrue(r is Utf8DecodeResult.Err)
+        assertEquals(0xE2u.toUByte(), r.byte)
+    }
+
+    @Test
+    fun utf8DecodeErrForOverlongEncoding() {
+        val r = utf8Decode(ubyteArrayOf(0xC0u, 0x80u))
+        assertTrue(r is Utf8DecodeResult.Err)
+        assertEquals(0xC0u.toUByte(), r.byte)
+    }
+
+    @Test
+    fun utf8DecodeOkForFourByteScalarValue() {
+        val r = utf8Decode(ubyteArrayOf(0xF0u, 0x9Fu, 0x98u, 0x80u))
+        assertTrue(r is Utf8DecodeResult.Ok)
+        assertTrue(r.ch.isHighSurrogate())
     }
 }

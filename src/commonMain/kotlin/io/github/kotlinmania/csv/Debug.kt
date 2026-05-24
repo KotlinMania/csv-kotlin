@@ -1,4 +1,4 @@
-// port-lint: source src/debug.rs
+// port-lint: source debug.rs
 package io.github.kotlinmania.csv
 
 /**
@@ -54,7 +54,7 @@ internal class Bytes(val data: UByteArray) {
  * If no valid encoding of a codepoint exists at the beginning of the given
  * byte slice, then the first byte is returned instead.
  *
- * This returns null (the Rust `Option::None`) if and only if `bytes` is empty.
+ * This returns null if and only if `bytes` is empty.
  */
 internal fun utf8Decode(bytes: UByteArray): Utf8DecodeResult? {
     fun len(byte: UByte): Int? {
@@ -94,8 +94,8 @@ internal sealed class Utf8DecodeResult {
 /**
  * Decode the first `len` bytes of `bytes` as a single UTF-8 codepoint.
  *
- * Returns the first Char of the decoded sequence (matching the upstream Rust
- * `s.chars().next().unwrap()`), or null if the bytes are not valid UTF-8.
+ * Returns the first Char of the decoded sequence, or null if the bytes are not
+ * valid UTF-8.
  *
  * For codepoints outside the BMP, the returned Char is the high surrogate
  * (mirroring the way Kotlin exposes a String's first code unit).
@@ -150,7 +150,7 @@ private fun decodeUtf8(bytes: UByteArray, len: Int): Char? {
     }
 }
 
-/** Number of UTF-8 bytes used to encode [ch] (mirrors Rust `char::len_utf8`). */
+/** Number of UTF-8 bytes used to encode [ch]. */
 private fun charLenUtf8(ch: Char): Int {
     val code = ch.code
     return when {
@@ -175,10 +175,10 @@ private fun hexDigit(value: Int): Char =
     if (value < 10) Char('0'.code + value) else Char('a'.code + value - 10)
 
 /**
- * Rust `char::escape_debug` output for a single char.
+ * Debug-escaped output for a single char.
  *
- * The Rust contract for the subset of characters that reach this branch in
- * `Bytes::fmt`:
+ * The contract for the subset of characters that reach this branch in
+ * [Bytes.toString]:
  *
  * - `\t`, `\r`, `\n` produce the two-character escapes `\t`, `\r`, `\n`.
  * - `\\` produces `\\\\`.
@@ -206,10 +206,10 @@ private fun appendEscapeDebug(sb: StringBuilder, ch: Char) {
 
 /**
  * Approximate the set of code points Rust treats as printable for
- * `char::escape_debug`.
+ * debug escaping.
  *
  * The exact Unicode "printable" table is large; the subset we need to
- * distinguish here is the one reached from `Bytes::fmt`. Everything outside
+ * distinguish here is the one reached from [Bytes.toString]. Everything outside
  * `0x20..0x7E` that was not already handled by the control-character branch
  * above falls into the non-ASCII region: surrogates stay non-printable, and
  * everything else is treated as printable (the upstream Rust crate's debug

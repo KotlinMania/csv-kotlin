@@ -77,7 +77,7 @@ fn main() {
 The above example can be run like so:
 
 ```text
-$ git clone git://github.com/BurntSushi/rust-csv
+$ # start from a prepared rust-csv checkout
 $ cd rust-csv
 $ cargo run --example cookbook-read-basic < examples/data/smallpop.csv
 ```
@@ -121,7 +121,7 @@ fn main() {
 The above example can be run like so:
 
 ```
-$ git clone git://github.com/BurntSushi/rust-csv
+$ # start from a prepared rust-csv checkout
 $ cd rust-csv
 $ cargo run --example cookbook-read-serde < examples/data/smallpop.csv
 ```

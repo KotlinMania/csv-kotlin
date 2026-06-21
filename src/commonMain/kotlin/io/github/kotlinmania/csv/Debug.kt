@@ -9,7 +9,9 @@ package io.github.kotlinmania.csv
  *
  * N.B. This is copied nearly verbatim from regex-automata. Sigh.
  */
-internal class Bytes(val data: UByteArray) {
+internal class Bytes(
+    val data: UByteArray,
+) {
     override fun toString(): String {
         val sb = StringBuilder()
         sb.append('"')
@@ -17,14 +19,15 @@ internal class Bytes(val data: UByteArray) {
         var bytes = data
         while (true) {
             val result = utf8Decode(bytes) ?: break
-            val ch: Char = when (result) {
-                is Utf8DecodeResult.Ok -> result.ch
-                is Utf8DecodeResult.Err -> {
-                    appendByteEscape(sb, result.byte)
-                    bytes = bytes.copyOfRange(1, bytes.size)
-                    continue
+            val ch: Char =
+                when (result) {
+                    is Utf8DecodeResult.Ok -> result.ch
+                    is Utf8DecodeResult.Err -> {
+                        appendByteEscape(sb, result.byte)
+                        bytes = bytes.copyOfRange(1, bytes.size)
+                        continue
+                    }
                 }
-            }
             bytes = bytes.copyOfRange(charLenUtf8(ch), bytes.size)
             val code = ch.code
             when {
@@ -80,15 +83,21 @@ internal fun utf8Decode(bytes: UByteArray): Utf8DecodeResult? {
     if (expected == 1) {
         return Utf8DecodeResult.Ok(Char(first.toInt()))
     }
-    val decoded = decodeUtf8(bytes, expected)
-        ?: return Utf8DecodeResult.Err(first)
+    val decoded =
+        decodeUtf8(bytes, expected)
+            ?: return Utf8DecodeResult.Err(first)
     return Utf8DecodeResult.Ok(decoded)
 }
 
 /** Result of [utf8Decode]: either a decoded char or the offending byte. */
 internal sealed class Utf8DecodeResult {
-    data class Ok(val ch: Char) : Utf8DecodeResult()
-    data class Err(val byte: UByte) : Utf8DecodeResult()
+    data class Ok(
+        val ch: Char,
+    ) : Utf8DecodeResult()
+
+    data class Err(
+        val byte: UByte,
+    ) : Utf8DecodeResult()
 }
 
 /**
@@ -101,44 +110,46 @@ internal sealed class Utf8DecodeResult {
  * (mirroring the way Kotlin exposes a String's first code unit).
  */
 private fun decodeUtf8(bytes: UByteArray, len: Int): Char? {
-    val codePoint: Int = when (len) {
-        2 -> {
-            val b0 = bytes[0].toInt()
-            val b1 = bytes[1].toInt()
-            if (b1 and 0xC0 != 0x80) return null
-            val cp = (b0 and 0x1F) shl 6 or (b1 and 0x3F)
-            if (cp < 0x80) return null
-            cp
+    val codePoint: Int =
+        when (len) {
+            2 -> {
+                val b0 = bytes[0].toInt()
+                val b1 = bytes[1].toInt()
+                if (b1 and 0xC0 != 0x80) return null
+                val cp = (b0 and 0x1F) shl 6 or (b1 and 0x3F)
+                if (cp < 0x80) return null
+                cp
+            }
+            3 -> {
+                val b0 = bytes[0].toInt()
+                val b1 = bytes[1].toInt()
+                val b2 = bytes[2].toInt()
+                if (b1 and 0xC0 != 0x80) return null
+                if (b2 and 0xC0 != 0x80) return null
+                val cp = (b0 and 0x0F) shl 12 or ((b1 and 0x3F) shl 6) or (b2 and 0x3F)
+                if (cp < 0x800) return null
+                if (cp in 0xD800..0xDFFF) return null
+                cp
+            }
+            4 -> {
+                val b0 = bytes[0].toInt()
+                val b1 = bytes[1].toInt()
+                val b2 = bytes[2].toInt()
+                val b3 = bytes[3].toInt()
+                if (b1 and 0xC0 != 0x80) return null
+                if (b2 and 0xC0 != 0x80) return null
+                if (b3 and 0xC0 != 0x80) return null
+                val cp =
+                    (b0 and 0x07) shl 18 or
+                        ((b1 and 0x3F) shl 12) or
+                        ((b2 and 0x3F) shl 6) or
+                        (b3 and 0x3F)
+                if (cp < 0x10000) return null
+                if (cp > 0x10FFFF) return null
+                cp
+            }
+            else -> return null
         }
-        3 -> {
-            val b0 = bytes[0].toInt()
-            val b1 = bytes[1].toInt()
-            val b2 = bytes[2].toInt()
-            if (b1 and 0xC0 != 0x80) return null
-            if (b2 and 0xC0 != 0x80) return null
-            val cp = (b0 and 0x0F) shl 12 or ((b1 and 0x3F) shl 6) or (b2 and 0x3F)
-            if (cp < 0x800) return null
-            if (cp in 0xD800..0xDFFF) return null
-            cp
-        }
-        4 -> {
-            val b0 = bytes[0].toInt()
-            val b1 = bytes[1].toInt()
-            val b2 = bytes[2].toInt()
-            val b3 = bytes[3].toInt()
-            if (b1 and 0xC0 != 0x80) return null
-            if (b2 and 0xC0 != 0x80) return null
-            if (b3 and 0xC0 != 0x80) return null
-            val cp = (b0 and 0x07) shl 18 or
-                ((b1 and 0x3F) shl 12) or
-                ((b2 and 0x3F) shl 6) or
-                (b3 and 0x3F)
-            if (cp < 0x10000) return null
-            if (cp > 0x10FFFF) return null
-            cp
-        }
-        else -> return null
-    }
     return if (codePoint <= 0xFFFF) {
         Char(codePoint)
     } else {
@@ -194,13 +205,14 @@ private fun appendEscapeDebug(sb: StringBuilder, ch: Char) {
         '\n' -> sb.append("\\n")
         '\\' -> sb.append("\\\\")
         '"' -> sb.append("\\\"")
-        else -> if (isPrintable(ch)) {
-            sb.append(ch)
-        } else {
-            sb.append("\\u{")
-            sb.append(ch.code.toString(16))
-            sb.append('}')
-        }
+        else ->
+            if (isPrintable(ch)) {
+                sb.append(ch)
+            } else {
+                sb.append("\\u{")
+                sb.append(ch.code.toString(16))
+                sb.append('}')
+            }
     }
 }
 

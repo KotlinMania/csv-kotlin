@@ -266,12 +266,15 @@ class ByteRecordTest {
     fun iterForwardAndReverse() {
         val data = listOf("foo", "bar", "baz", "quux", "wat")
         val rec = ByteRecord.fromStrings(data)
-        val list = rec.toList()
-        assertEquals("foo", list[0].decodeToString())
-        assertEquals("bar", list[1].decodeToString())
-        assertEquals("baz", list[2].decodeToString())
-        assertEquals("quux", list[3].decodeToString())
-        assertEquals("wat", list[4].decodeToString())
+        val it = rec.iter()
+
+        assertEquals("wat", it.nextBack()?.decodeToString())
+        assertEquals("foo", it.next().decodeToString())
+        assertEquals("bar", it.next().decodeToString())
+        assertEquals("quux", it.nextBack()?.decodeToString())
+        assertEquals("baz", it.next().decodeToString())
+        assertNull(it.nextBack())
+        assertTrue(!it.hasNext())
     }
 
     @Test
@@ -286,5 +289,18 @@ class ByteRecordTest {
         val test1 = ByteRecord.fromStrings(listOf("12", "34", "56"))
         val test2 = ByteRecord.fromStrings(listOf("12", "34"))
         assertNotEquals(test1, test2)
+    }
+
+    @Test
+    fun asSliceAndCloneTruncated() {
+        val rec = ByteRecord.withCapacity(100, 10)
+        rec.pushField(b("foo"))
+        rec.pushField(b("bar"))
+        assertEquals("foobar", rec.asSlice().decodeToString())
+
+        val truncated = rec.cloneTruncated()
+        assertEquals(2, truncated.len())
+        assertEquals("foobar", truncated.asSlice().decodeToString())
+        assertTrue(rec.iterEq(truncated))
     }
 }

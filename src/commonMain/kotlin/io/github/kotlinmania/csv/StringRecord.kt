@@ -15,57 +15,149 @@ public class StringRecord private constructor(
         ByteRecord(bufferCapacity, fieldCapacity),
     )
 
+    /**
+     * Return a copy of this record.
+     */
     public fun clone(): StringRecord = StringRecord(record.clone())
 
+    /**
+     * Returns the number of fields in this record.
+     */
     public fun len(): Int = record.len()
 
+    /**
+     * Returns true if and only if this record is empty.
+     */
     public fun isEmpty(): Boolean = record.isEmpty()
 
+    /**
+     * Return the position of this record, if available.
+     */
     public fun position(): Position? = record.position()
 
+    /**
+     * Set the position of this record.
+     */
     public fun setPosition(pos: Position?): StringRecord {
         record.setPosition(pos)
         return this
     }
 
+    /**
+     * Clear this record so that it has zero fields.
+     */
     public fun clear() {
         record.clear()
     }
 
+    /**
+     * Truncate this record to [len] fields.
+     *
+     * If [len] is greater than the number of fields in this record, then this
+     * has no effect.
+     */
     public fun truncate(len: Int) {
         record.truncate(len)
     }
 
+    /**
+     * Return the start and end position of a field in this record.
+     *
+     * If no such field exists at the given index, then return null.
+     */
     public fun range(index: Int): IntRange? = record.range(index)
 
+    /**
+     * Return the field at index [index].
+     *
+     * If no field at index [index] exists, then this returns null.
+     */
     public operator fun get(index: Int): String? {
         val bytes = record.get(index) ?: return null
         return bytes.decodeToString()
     }
 
+    /**
+     * Add a new field to this record.
+     */
     public fun pushField(field: String) {
         record.pushField(field.encodeToByteArray())
     }
 
+    /**
+     * Trim the fields of this record so that leading and trailing whitespace
+     * is removed.
+     *
+     * This method uses the Unicode definition of whitespace.
+     */
     public fun trim() {
-        record.trim()
+        if (record.len() == 0) return
+        val trimmed = StringRecord(record.asSlice().size, record.len())
+        trimmed.setPosition(record.position()?.copy())
+        for (i in 0 until record.len()) {
+            val field = this[i] ?: ""
+            trimmed.pushField(trimUnicode(field))
+        }
+        this.record.clear()
+        for (field in trimmed) {
+            this.pushField(field)
+        }
+        this.setPosition(trimmed.position())
     }
 
+    /**
+     * Return a new [StringRecord] containing only the fields in the specified range.
+     */
     public fun slice(range: IntRange): StringRecord =
         StringRecord(record.slice(range))
 
+    /**
+     * Return the entire row as a single string. The string returned
+     * stores all fields contiguously. The boundaries of each field can be
+     * determined via the [range] method.
+     */
+    public fun asSlice(): String = record.asSlice().decodeToString()
+
+    /**
+     * Clone this record, but only copy fields up to the end of bounds. This
+     * is useful when one wants to copy a record, but not necessarily any
+     * excess capacity in that record.
+     */
+    public fun cloneTruncated(): StringRecord =
+        StringRecord(record.cloneTruncated())
+
+    /**
+     * Compare this record with another string record for field equality.
+     */
+    public fun iterEq(other: StringRecord): Boolean = record.iterEq(other.asByteRecord())
+
+    /**
+     * Compare this record with a list of strings for field equality.
+     */
+    public fun iterEq(other: List<String>): Boolean {
+        if (len() != other.size) return false
+        for (i in 0 until len()) {
+            if (get(i) != other[i]) return false
+        }
+        return true
+    }
+
+    /**
+     * Return a reference to this record's raw [ByteRecord].
+     */
     public fun asByteRecord(): ByteRecord = record
 
+    /**
+     * Convert this [StringRecord] into a [ByteRecord].
+     */
     public fun intoByteRecord(): ByteRecord = record
 
-    override fun iterator(): Iterator<String> =
-        object : Iterator<String> {
-            private var idx = 0
+    /**
+     * Returns an iterator over all fields in this record.
+     */
+    public fun iter(): StringRecordIter = StringRecordIter(record.iter())
 
-            override fun hasNext(): Boolean = idx < len()
-
-            override fun next(): String = get(idx++) ?: throw NoSuchElementException()
-        }
+    override fun iterator(): StringRecordIter = iter()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -112,4 +204,48 @@ public class StringRecord private constructor(
             return rec
         }
     }
+}
+
+/**
+ * An iterator over the fields in a string record.
+ */
+public class StringRecordIter internal constructor(
+    private val iter: ByteRecordIter,
+) : Iterator<String> {
+    override fun hasNext(): Boolean = iter.hasNext()
+
+    override fun next(): String = iter.next().decodeToString()
+
+    /**
+     * Return the next field from the back of the iterator, or null if empty.
+     */
+    public fun nextBack(): String? = iter.nextBack()?.decodeToString()
+
+    /**
+     * Returns the number of remaining elements in this iterator.
+     */
+    public fun count(): Int = iter.count()
+}
+
+internal fun isUnicodeWhitespace(c: Char): Boolean {
+    val code = c.code
+    return when (code) {
+        0x0009, 0x000A, 0x000B, 0x000C, 0x000D, 0x0020, 0x0085, 0x00A0,
+        0x1680, 0x2028, 0x2029, 0x202F, 0x205F, 0x3000,
+        -> true
+        in 0x2000..0x200A -> true
+        else -> false
+    }
+}
+
+internal fun trimUnicode(s: String): String {
+    var start = 0
+    while (start < s.length && isUnicodeWhitespace(s[start])) {
+        start++
+    }
+    var end = s.length
+    while (end > start && isUnicodeWhitespace(s[end - 1])) {
+        end--
+    }
+    return s.substring(start, end)
 }

@@ -258,7 +258,10 @@ public class StringRecordIter internal constructor(
 ) : Iterator<String> {
     override fun hasNext(): Boolean = iter.hasNext()
 
-    override fun next(): String = iter.next().decodeToString()
+    override fun next(): String {
+        if (!hasNext()) throw NoSuchElementException("No more elements in StringRecordIter")
+        return iter.next().decodeToString()
+    }
 
     /**
      * Return the next field from the back of the iterator, or null if empty.

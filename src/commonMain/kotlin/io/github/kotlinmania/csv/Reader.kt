@@ -140,6 +140,7 @@ public class Reader internal constructor(
 
     public fun intoInner(): ByteArray = bytes
 
+    @Suppress("MemberNameEqualsClassName")
     public fun reader(): Reader = this
 
     public fun intoReader(): Reader = this
@@ -243,37 +244,17 @@ public class Reader internal constructor(
         return Result.success(true)
     }
 
-    public fun byteRecords(): Sequence<Result<ByteRecord>> =
-        sequence {
-            while (true) {
-                val rec = ByteRecord()
-                val res = readByteRecord(rec)
-                if (res.isFailure) {
-                    yield(Result.failure(res.exceptionOrNull()!!))
-                    break
-                }
-                if (!res.getOrThrow()) break
-                yield(Result.success(rec))
-            }
-        }
+    public fun getMut(): Reader = this
 
-    public fun intoByteRecords(): Sequence<Result<ByteRecord>> = byteRecords()
+    public fun readerMut(): Reader = this
 
-    public fun records(): Sequence<Result<StringRecord>> =
-        sequence {
-            while (true) {
-                val rec = StringRecord()
-                val res = readRecord(rec)
-                if (res.isFailure) {
-                    yield(Result.failure(res.exceptionOrNull()!!))
-                    break
-                }
-                if (!res.getOrThrow()) break
-                yield(Result.success(rec))
-            }
-        }
+    public fun byteRecords(): ByteRecordsIter = ByteRecordsIter(this)
 
-    public fun intoRecords(): Sequence<Result<StringRecord>> = records()
+    public fun intoByteRecords(): ByteRecordsIntoIter = ByteRecordsIntoIter(this)
+
+    public fun records(): StringRecordsIter = StringRecordsIter(this)
+
+    public fun intoRecords(): StringRecordsIntoIter = StringRecordsIntoIter(this)
 
     private fun readNextRawRecord(record: ByteRecord, isHeader: Boolean): Result<Boolean> {
         record.clear()
@@ -357,25 +338,23 @@ public class Reader internal constructor(
                 continue
             }
 
-            val isTerminator =
-                when (terminator) {
-                    is Terminator.CRLF -> b == '\n'.code.toByte() || (b == '\r'.code.toByte() && offset + 1 < bytes.size && bytes[offset + 1] == '\n'.code.toByte())
-                    is Terminator.Any -> b == terminator.byte
+            if (b == '\n'.code.toByte()) {
+                offset++
+                line++
+                if (currentField.isNotEmpty() && currentField.last() == '\r'.code.toByte()) {
+                    currentField.removeAt(currentField.size - 1)
                 }
+                break
+            }
 
-            if (isTerminator) {
-                if (b == '\r'.code.toByte() && offset + 1 < bytes.size && bytes[offset + 1] == '\n'.code.toByte()) {
+            if (b == '\r'.code.toByte()) {
+                if (offset + 1 < bytes.size && bytes[offset + 1] == '\n'.code.toByte()) {
                     offset += 2
                     line++
-                } else if (b == '\n'.code.toByte()) {
-                    offset++
-                    line++
-                } else {
-                    offset++
+                    break
                 }
-                addFieldToRecord(record, currentField, shouldTrim, fieldHasQuote)
-                currentField.clear()
-                fieldHasQuote = false
+                offset++
+                line++
                 break
             }
 
@@ -383,15 +362,7 @@ public class Reader internal constructor(
             offset++
         }
 
-        if (offset >= bytes.size && (currentField.isNotEmpty() || fieldHasQuote || record.len() > 0)) {
-            if (currentField.isNotEmpty() || fieldHasQuote) {
-                addFieldToRecord(record, currentField, shouldTrim, fieldHasQuote)
-            }
-        }
-
-        if (record.len() == 0 && offset >= bytes.size) {
-            return Result.success(false)
-        }
+        addFieldToRecord(record, currentField, shouldTrim, fieldHasQuote)
 
         if (!flexible) {
             val currentLen = record.len()
@@ -400,9 +371,9 @@ public class Reader internal constructor(
                 return Result.failure(
                     CsvError(
                         ErrorKind.UnequalLengths(
-                            record.position(),
-                            expected.toULong(),
-                            currentLen.toULong(),
+                            pos = startPos,
+                            expectedLen = expected.toULong(),
+                            len = currentLen.toULong(),
                         ),
                     ),
                 )
@@ -448,3 +419,143 @@ public class Reader internal constructor(
         }
     }
 }
+
+/**
+ * A borrowed iterator over records as strings.
+ */
+public class StringRecordsIter internal constructor(
+    private val rdr: Reader,
+) : Iterator<Result<StringRecord>>,
+    Iterable<Result<StringRecord>> {
+    private val rec = StringRecord()
+
+    public fun reader(): Reader = rdr
+
+    public fun readerMut(): Reader = rdr
+
+    override fun iterator(): Iterator<Result<StringRecord>> = this
+
+    override fun hasNext(): Boolean = !rdr.isDone()
+
+    override fun next(): Result<StringRecord> {
+        if (!hasNext()) throw NoSuchElementException("No more records")
+        val res = rdr.readRecord(rec)
+        if (res.isFailure) return Result.failure(res.exceptionOrNull()!!)
+        if (!res.getOrThrow()) {
+            throw NoSuchElementException("No more records")
+        }
+        return Result.success(rec.clone())
+    }
+}
+
+/**
+ * An owned iterator over records as strings.
+ */
+public class StringRecordsIntoIter internal constructor(
+    private val rdr: Reader,
+) : Iterator<Result<StringRecord>>,
+    Iterable<Result<StringRecord>> {
+    private val iter = StringRecordsIter(rdr)
+
+    public fun reader(): Reader = rdr
+
+    public fun readerMut(): Reader = rdr
+
+    public fun intoReader(): Reader = rdr
+
+    override fun iterator(): Iterator<Result<StringRecord>> = iter
+
+    override fun hasNext(): Boolean = iter.hasNext()
+
+    override fun next(): Result<StringRecord> {
+        if (!hasNext()) throw NoSuchElementException("No more records")
+        return iter.next()
+    }
+}
+
+/**
+ * A borrowed iterator over records as raw bytes.
+ */
+public class ByteRecordsIter internal constructor(
+    private val rdr: Reader,
+) : Iterator<Result<ByteRecord>>,
+    Iterable<Result<ByteRecord>> {
+    private val rec = ByteRecord()
+
+    public fun reader(): Reader = rdr
+
+    public fun readerMut(): Reader = rdr
+
+    override fun iterator(): Iterator<Result<ByteRecord>> = this
+
+    override fun hasNext(): Boolean = !rdr.isDone()
+
+    override fun next(): Result<ByteRecord> {
+        if (!hasNext()) throw NoSuchElementException("No more records")
+        val res = rdr.readByteRecord(rec)
+        if (res.isFailure) return Result.failure(res.exceptionOrNull()!!)
+        if (!res.getOrThrow()) {
+            throw NoSuchElementException("No more records")
+        }
+        return Result.success(rec.clone())
+    }
+}
+
+/**
+ * An owned iterator over records as raw bytes.
+ */
+public class ByteRecordsIntoIter internal constructor(
+    private val rdr: Reader,
+) : Iterator<Result<ByteRecord>>,
+    Iterable<Result<ByteRecord>> {
+    private val iter = ByteRecordsIter(rdr)
+
+    public fun reader(): Reader = rdr
+
+    public fun readerMut(): Reader = rdr
+
+    public fun intoReader(): Reader = rdr
+
+    override fun iterator(): Iterator<Result<ByteRecord>> = iter
+
+    override fun hasNext(): Boolean = iter.hasNext()
+
+    override fun next(): Result<ByteRecord> {
+        if (!hasNext()) throw NoSuchElementException("No more records")
+        return iter.next()
+    }
+}
+
+/**
+ * Whether EOF of the underlying reader has been reached or not.
+ */
+public enum class ReaderEofState {
+    NOT_EOF,
+    EOF,
+    IO_ERROR,
+}
+
+/**
+ * Headers representation.
+ */
+public class Headers(
+    public val record: ByteRecord,
+    public val pos: Position?,
+) {
+    public fun clone(): Headers = Headers(record.clone(), pos?.copy())
+}
+
+/**
+ * Reader state machine representation.
+ */
+public class ReaderState(
+    public var headers: Headers? = null,
+    public var hasHeaders: Boolean = true,
+    public var flexible: Boolean = false,
+    public var trim: Trim = Trim.NONE,
+    public var firstFieldCount: ULong? = null,
+    public var curPos: Position = Position.new(),
+    public var first: Boolean = true,
+    public var seeked: Boolean = false,
+    public var eof: ReaderEofState = ReaderEofState.NOT_EOF,
+)

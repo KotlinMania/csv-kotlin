@@ -232,6 +232,23 @@ public class ByteRecord : Iterable<ByteArray> {
     }
 
     /**
+     * Expand the capacity of the fields buffer.
+     */
+    public fun expand(capacity: Int) {
+        if (capacity > fields.size) {
+            fields = fields.copyOf(capacity)
+        }
+    }
+
+    /**
+     * Add a field to the end of this record and return this.
+     */
+    public fun add(field: ByteArray): ByteRecord {
+        pushField(field)
+        return this
+    }
+
+    /**
      * Convert this record into an iterator over its fields.
      */
     public fun intoIter(): ByteRecordIter = iter()
@@ -462,4 +479,22 @@ public class ByteRecordIter internal constructor(
      * Returns the lower and upper bounds of remaining elements.
      */
     public fun sizeHint(): Pair<Int, Int?> = count() to count()
+}
+
+/**
+ * Inner storage for a ByteRecord.
+ */
+public class ByteRecordInner(
+    public var pos: Position?,
+    public var fields: ByteArray,
+    public var bounds: Bounds,
+)
+
+/**
+ * Bounds representation for field offsets.
+ */
+public class Bounds(
+    public val ends: MutableList<Int> = ArrayList(),
+) {
+    public fun ends(): List<Int> = ends
 }

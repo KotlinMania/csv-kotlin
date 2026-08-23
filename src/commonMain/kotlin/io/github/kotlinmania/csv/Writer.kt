@@ -132,6 +132,19 @@ public class Writer internal constructor(
 
     public fun intoString(): Result<String> = Result.success(asString())
 
+    public fun readable(): Boolean = false
+
+    public fun writable(): Boolean = true
+
+    public fun written(): Long = buffer.size.toLong()
+
+    public fun write(bytes: ByteArray): Result<Unit> {
+        for (b in bytes) {
+            buffer.add(b)
+        }
+        return Result.success(Unit)
+    }
+
     public fun asByteArray(): ByteArray = buffer.toByteArray()
 
     public fun asString(): String = buffer.toByteArray().decodeToString()
@@ -342,4 +355,40 @@ public class Writer internal constructor(
 
         public fun default(): Writer = new()
     }
+}
+
+/**
+ * HeaderState encodes a small state machine for handling header writes.
+ */
+public enum class HeaderState {
+    WRITE,
+    DID_WRITE,
+    DID_NOT_WRITE,
+    NONE,
+}
+
+/**
+ * Writer state machine representation.
+ */
+public class WriterState(
+    public var header: HeaderState = HeaderState.WRITE,
+    public var flexible: Boolean = false,
+    public var firstFieldCount: ULong? = null,
+    public var fieldsWritten: ULong = 0uL,
+    public var panicked: Boolean = false,
+)
+
+/**
+ * Internal buffer for buffering writes.
+ */
+public class Buffer(
+    public val bytes: ArrayList<Byte> = ArrayList(),
+) {
+    public fun clear() {
+        bytes.clear()
+    }
+
+    public fun len(): Int = bytes.size
+
+    public fun isEmpty(): Boolean = bytes.isEmpty()
 }

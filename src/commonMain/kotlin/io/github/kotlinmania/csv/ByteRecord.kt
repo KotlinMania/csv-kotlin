@@ -24,24 +24,48 @@ public class ByteRecord : Iterable<ByteArray> {
         this.ends = ArrayList(ends)
     }
 
+    /**
+     * Return a copy of this record.
+     */
     public fun clone(): ByteRecord = ByteRecord(pos, fields.copyOf(), ends)
 
+    /**
+     * Returns the number of fields in this record.
+     */
     public fun len(): Int = ends.size
 
+    /**
+     * Returns true if and only if this record is empty.
+     */
     public fun isEmpty(): Boolean = ends.isEmpty()
 
+    /**
+     * Return the position of this record, if available.
+     */
     public fun position(): Position? = pos
 
+    /**
+     * Set the position of this record.
+     */
     public fun setPosition(pos: Position?): ByteRecord {
         this.pos = pos?.copy()
         return this
     }
 
+    /**
+     * Clear this record so that it has zero fields.
+     */
     public fun clear() {
         ends.clear()
         fields = ByteArray(0)
     }
 
+    /**
+     * Truncate this record to [len] fields.
+     *
+     * If [len] is greater than or equal to the number of fields in this record,
+     * then this has no effect.
+     */
     public fun truncate(len: Int) {
         if (len < ends.size) {
             while (ends.size > len) {
@@ -52,6 +76,11 @@ public class ByteRecord : Iterable<ByteArray> {
         }
     }
 
+    /**
+     * Return the start and end position of a field in this record.
+     *
+     * If no such field exists at the given index, then return null.
+     */
     public fun range(index: Int): IntRange? {
         if (index < 0 || index >= ends.size) return null
         val start = if (index == 0) 0 else ends[index - 1]
@@ -59,11 +88,19 @@ public class ByteRecord : Iterable<ByteArray> {
         return start until end
     }
 
+    /**
+     * Return the field at index [index].
+     *
+     * If no field at index [index] exists, then this returns null.
+     */
     public operator fun get(index: Int): ByteArray? {
         val r = range(index) ?: return null
         return fields.copyOfRange(r.first, r.last + 1)
     }
 
+    /**
+     * Add a new field to this record.
+     */
     public fun pushField(bytes: ByteArray) {
         val oldSize = if (ends.isEmpty()) 0 else ends.last()
         val newSize = oldSize + bytes.size
@@ -75,10 +112,20 @@ public class ByteRecord : Iterable<ByteArray> {
         ends.add(newSize)
     }
 
+    /**
+     * Add a new field to this record from a string.
+     */
     public fun pushField(string: String) {
         pushField(string.encodeToByteArray())
     }
 
+    /**
+     * Trim the fields of this record so that leading and trailing whitespace
+     * is removed.
+     *
+     * This method uses the ASCII definition of whitespace. That is, only
+     * bytes in the class `[\t\n\v\f\r ]` are trimmed.
+     */
     public fun trim() {
         val newRecord = ByteRecord(fields.size, ends.size)
         newRecord.pos = this.pos
@@ -99,6 +146,9 @@ public class ByteRecord : Iterable<ByteArray> {
         this.ends.addAll(newRecord.ends)
     }
 
+    /**
+     * Return a new [ByteRecord] containing only the fields in the specified range.
+     */
     public fun slice(range: IntRange): ByteRecord {
         val result = ByteRecord()
         result.pos = this.pos
@@ -110,6 +160,51 @@ public class ByteRecord : Iterable<ByteArray> {
         }
         return result
     }
+
+    /**
+     * Return the entire row as a single byte array. The array returned stores
+     * all fields contiguously. The boundaries of each field can be determined
+     * via the [range] method.
+     */
+    public fun asSlice(): ByteArray {
+        val end = if (ends.isEmpty()) 0 else ends.last()
+        return fields.copyOfRange(0, end)
+    }
+
+    /**
+     * Clone this record, but only copy fields up to the end of bounds. This
+     * is useful when one wants to copy a record, but not necessarily any
+     * excess capacity in that record.
+     */
+    public fun cloneTruncated(): ByteRecord =
+        ByteRecord(pos?.copy(), asSlice(), ArrayList(ends))
+
+    /**
+     * Compare this record with another byte record for field equality.
+     */
+    public fun iterEq(other: ByteRecord): Boolean {
+        if (len() != other.len()) return false
+        for (i in 0 until len()) {
+            if (!this[i].contentEquals(other[i])) return false
+        }
+        return true
+    }
+
+    /**
+     * Compare this record with a list of byte arrays for field equality.
+     */
+    public fun iterEq(other: List<ByteArray>): Boolean {
+        if (len() != other.size) return false
+        for (i in 0 until len()) {
+            if (!this[i].contentEquals(other[i])) return false
+        }
+        return true
+    }
+
+    /**
+     * Returns an iterator over all fields in this record.
+     */
+    public fun iter(): ByteRecordIter = ByteRecordIter(this)
 
     public fun validate(): Result<Unit> {
         for (i in 0 until len()) {
@@ -149,14 +244,7 @@ public class ByteRecord : Iterable<ByteArray> {
         return Result.success(Unit)
     }
 
-    override fun iterator(): Iterator<ByteArray> =
-        object : Iterator<ByteArray> {
-            private var idx = 0
-
-            override fun hasNext(): Boolean = idx < len()
-
-            override fun next(): ByteArray = get(idx++) ?: throw NoSuchElementException()
-        }
+    override fun iterator(): ByteRecordIter = iter()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -227,4 +315,34 @@ public class ByteRecord : Iterable<ByteArray> {
             return ub == 0x20 || ub == 0x09 || ub == 0x0A || ub == 0x0D || ub == 0x0C || ub == 0x0B
         }
     }
+}
+
+/**
+ * An iterator over the fields in a byte record.
+ */
+public class ByteRecordIter internal constructor(
+    private val record: ByteRecord,
+) : Iterator<ByteArray> {
+    private var iForward = 0
+    private var iReverse = record.len()
+
+    override fun hasNext(): Boolean = iForward < iReverse
+
+    override fun next(): ByteArray {
+        if (!hasNext()) throw NoSuchElementException()
+        return record[iForward++]!!
+    }
+
+    /**
+     * Return the next field from the back of the iterator, or null if empty.
+     */
+    public fun nextBack(): ByteArray? {
+        if (iForward == iReverse) return null
+        return record[--iReverse]
+    }
+
+    /**
+     * Returns the number of remaining elements in this iterator.
+     */
+    public fun count(): Int = iReverse - iForward
 }

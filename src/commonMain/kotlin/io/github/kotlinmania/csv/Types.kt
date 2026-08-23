@@ -41,6 +41,11 @@ public enum class QuoteStyle {
  */
 public sealed class Terminator {
     /**
+     * Convert this terminator to its core representation.
+     */
+    public fun toCore(): Terminator = this
+
+    /**
      * Automatically detect CRLF (`\r\n`) or LF (`\n`) on input, and use CRLF (`\r\n`) on output.
      */
     public data object CRLF : Terminator()
@@ -76,4 +81,15 @@ public enum class Trim {
      * Trim whitespace from all fields.
      */
     ALL,
+    ;
+
+    /**
+     * Return true if fields should be trimmed.
+     */
+    public fun shouldTrimFields(): Boolean = this == FIELDS || this == ALL
+
+    /**
+     * Return true if headers should be trimmed.
+     */
+    public fun shouldTrimHeaders(): Boolean = this == HEADERS || this == ALL
 }

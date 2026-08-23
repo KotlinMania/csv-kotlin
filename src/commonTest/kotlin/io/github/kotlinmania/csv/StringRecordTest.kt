@@ -117,4 +117,32 @@ class StringRecordTest {
         assertEquals("foobar", truncated.asSlice())
         kotlin.test.assertTrue(rec.iterEq(truncated))
     }
+
+    @Test
+    fun eqAndExtendAndIndex() {
+        val rec = StringRecord.fromIter(listOf("a", "b"))
+        kotlin.test.assertTrue(rec.eq(StringRecord.from(listOf("a", "b"))))
+        kotlin.test.assertTrue(rec.eq(listOf("a", "b")))
+        assertEquals("a", rec.index(0))
+        assertEquals("b", rec.index(1))
+
+        rec.extend(listOf("c", "d"))
+        assertEquals(4, rec.len())
+        assertEquals("c", rec.index(2))
+        assertEquals("d", rec.index(3))
+
+        val iter = rec.intoIter()
+        assertEquals(4 to 4, iter.sizeHint())
+        assertEquals("a", iter.next())
+        assertEquals("StringRecord([a, b, c, d])", rec.fmt())
+    }
+
+    @Test
+    fun readFromReader() {
+        val reader = ReaderBuilder.new().hasHeaders(false).fromString("x,y,z\n")
+        val rec = StringRecord.default()
+        val res = rec.read(reader)
+        kotlin.test.assertTrue(res.getOrThrow())
+        assertEquals(listOf("x", "y", "z"), rec.toList())
+    }
 }

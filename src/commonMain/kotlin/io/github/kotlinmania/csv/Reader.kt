@@ -78,6 +78,12 @@ public class ReaderBuilder {
         return this
     }
 
+    public fun quoting(yes: Boolean): ReaderBuilder = this
+
+    public fun ascii(yes: Boolean): ReaderBuilder = this
+
+    public fun nfa(yes: Boolean): ReaderBuilder = this
+
     public fun fromBytes(bytes: ByteArray): Reader =
         Reader(
             bytes = bytes,
@@ -99,6 +105,8 @@ public class ReaderBuilder {
 
     public companion object {
         public fun new(): ReaderBuilder = ReaderBuilder()
+
+        public fun default(): ReaderBuilder = new()
     }
 }
 
@@ -126,6 +134,16 @@ public class Reader internal constructor(
 
     public fun position(): Position = Position(offset.toULong(), line, recordNum)
 
+    public fun isDone(): Boolean = offset >= bytes.size
+
+    public fun getRef(): ByteArray = bytes
+
+    public fun intoInner(): ByteArray = bytes
+
+    public fun reader(): Reader = this
+
+    public fun intoReader(): Reader = this
+
     public fun seek(pos: Position): Result<Unit> {
         val hRes = byteHeaders()
         if (hRes.isFailure) {
@@ -136,6 +154,8 @@ public class Reader internal constructor(
         recordNum = pos.record()
         return Result.success(Unit)
     }
+
+    public fun seekRaw(pos: Position): Result<Unit> = seek(pos)
 
     public fun byteHeaders(): Result<ByteRecord> {
         if (cachedHeaders != null) {
@@ -237,6 +257,8 @@ public class Reader internal constructor(
             }
         }
 
+    public fun intoByteRecords(): Sequence<Result<ByteRecord>> = byteRecords()
+
     public fun records(): Sequence<Result<StringRecord>> =
         sequence {
             while (true) {
@@ -250,6 +272,8 @@ public class Reader internal constructor(
                 yield(Result.success(rec))
             }
         }
+
+    public fun intoRecords(): Sequence<Result<StringRecord>> = records()
 
     private fun readNextRawRecord(record: ByteRecord, isHeader: Boolean): Result<Boolean> {
         record.clear()
@@ -350,6 +374,8 @@ public class Reader internal constructor(
                     offset++
                 }
                 addFieldToRecord(record, currentField, shouldTrim, fieldHasQuote)
+                currentField.clear()
+                fieldHasQuote = false
                 break
             }
 
@@ -406,6 +432,10 @@ public class Reader internal constructor(
     }
 
     public companion object {
+        public fun new(): Reader = ReaderBuilder.new().fromReader(ByteArray(0))
+
+        public fun default(): Reader = new()
+
         public fun fromReader(bytes: ByteArray): Reader =
             ReaderBuilder.new().fromReader(bytes)
 

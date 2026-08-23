@@ -191,6 +191,11 @@ public class ByteRecord : Iterable<ByteArray> {
     }
 
     /**
+     * Compare this record with another byte record for field equality.
+     */
+    public fun eq(other: ByteRecord): Boolean = this == other
+
+    /**
      * Compare this record with a list of byte arrays for field equality.
      */
     public fun iterEq(other: List<ByteArray>): Boolean {
@@ -199,6 +204,75 @@ public class ByteRecord : Iterable<ByteArray> {
             if (!this[i].contentEquals(other[i])) return false
         }
         return true
+    }
+
+    /**
+     * Compare this record with a list of byte arrays for field equality.
+     */
+    public fun eq(other: List<ByteArray>): Boolean = iterEq(other)
+
+    /**
+     * Format this record for debugging purposes.
+     */
+    public fun fmt(): String = toString()
+
+    /**
+     * Return the field at index [index], or throw an [IndexOutOfBoundsException].
+     */
+    public fun index(index: Int): ByteArray =
+        this[index] ?: throw IndexOutOfBoundsException("index out of bounds: $index (len: ${len()})")
+
+    /**
+     * Extend this record with fields from the given iterable.
+     */
+    public fun extend(iter: Iterable<ByteArray>) {
+        for (field in iter) {
+            pushField(field)
+        }
+    }
+
+    /**
+     * Convert this record into an iterator over its fields.
+     */
+    public fun intoIter(): ByteRecordIter = iter()
+
+    /**
+     * Return a copy of the list of end offsets for each field.
+     */
+    public fun ends(): List<Int> = ArrayList(ends)
+
+    /**
+     * Return the end offset of the field at [index], if it exists.
+     */
+    public fun end(index: Int): Int? = ends.getOrNull(index)
+
+    /**
+     * Return the raw underlying byte array and list of end offsets.
+     */
+    public fun asParts(): Pair<ByteArray, List<Int>> = fields to ArrayList(ends)
+
+    /**
+     * Set the length (number of fields) in this record.
+     */
+    public fun setLen(len: Int) {
+        truncate(len)
+    }
+
+    /**
+     * Trim ASCII whitespace from all fields in this record.
+     */
+    public fun trimAscii() {
+        if (len() == 0) return
+        val trimmed = ByteRecord(asSlice().size, len())
+        trimmed.setPosition(position()?.copy())
+        for (field in this) {
+            trimmed.pushField(trimAscii(field))
+        }
+        clear()
+        for (field in trimmed) {
+            pushField(field)
+        }
+        setPosition(trimmed.position())
     }
 
     /**
@@ -295,6 +369,8 @@ public class ByteRecord : Iterable<ByteArray> {
     public companion object {
         public fun new(): ByteRecord = ByteRecord()
 
+        public fun default(): ByteRecord = new()
+
         public fun withCapacity(buffer: Int, fields: Int): ByteRecord =
             ByteRecord(buffer, fields)
 
@@ -304,15 +380,36 @@ public class ByteRecord : Iterable<ByteArray> {
             return rec
         }
 
+        public fun fromIter(iter: Iterable<ByteArray>): ByteRecord = from(iter.toList())
+
         public fun fromStrings(fields: List<String>): ByteRecord {
             val rec = ByteRecord(0, fields.size)
             for (f in fields) rec.pushField(f)
             return rec
         }
 
-        private fun isAsciiWhitespace(b: Byte): Boolean {
+        public fun isAsciiWhitespace(b: Byte): Boolean {
             val ub = b.toInt() and 0xFF
             return ub == 0x20 || ub == 0x09 || ub == 0x0A || ub == 0x0D || ub == 0x0C || ub == 0x0B
+        }
+
+        public fun trimAscii(bytes: ByteArray): ByteArray =
+            trimAsciiStart(trimAsciiEnd(bytes))
+
+        public fun trimAsciiStart(bytes: ByteArray): ByteArray {
+            var start = 0
+            while (start < bytes.size && isAsciiWhitespace(bytes[start])) {
+                start++
+            }
+            return if (start == 0) bytes else bytes.copyOfRange(start, bytes.size)
+        }
+
+        public fun trimAsciiEnd(bytes: ByteArray): ByteArray {
+            var end = bytes.size
+            while (end > 0 && isAsciiWhitespace(bytes[end - 1])) {
+                end--
+            }
+            return if (end == bytes.size) bytes else bytes.copyOfRange(0, end)
         }
     }
 }
@@ -345,4 +442,9 @@ public class ByteRecordIter internal constructor(
      * Returns the number of remaining elements in this iterator.
      */
     public fun count(): Int = iReverse - iForward
+
+    /**
+     * Returns the lower and upper bounds of remaining elements.
+     */
+    public fun sizeHint(): Pair<Int, Int?> = count() to count()
 }

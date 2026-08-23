@@ -122,4 +122,19 @@ class WriterTest {
         val buf = wtr.intoInner().getOrThrow().decodeToString()
         assertEquals("\"# comment\",another\n", buf)
     }
+
+    @Test
+    fun writerParityMethods() {
+        val wtr = WriterBuilder.default().fromWriter()
+        wtr.writeRecord(listOf("foo", "bar"))
+        assertEquals("foo,bar\n", wtr.wtrAsString())
+        assertEquals("foo,bar\n", wtr.intoString().getOrThrow())
+        assertEquals("foo,bar\n", wtr.getRef().decodeToString())
+
+        wtr.clear()
+        assertEquals("", wtr.asString())
+
+        val wtr2 = Writer.default()
+        assertEquals("", wtr2.asString())
+    }
 }

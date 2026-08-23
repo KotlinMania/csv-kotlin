@@ -24,6 +24,7 @@ potential-bugs:
   UnsafeCallOnNullableType: { active: false }
   UnnecessaryNotNullOperator: { active: false }
   ImplicitDefaultLocale: { active: false }
+  IteratorNotThrowingNoSuchElementException: { active: false }
 
 performance:
   active: true
@@ -90,6 +91,7 @@ naming:
   FunctionParameterNaming: { active: false }
   MatchingDeclarationName: { active: false }
   ObjectPropertyNaming: { active: false }
+  MemberNameEqualsClassName: { active: false }
 
 exceptions:
   active: true

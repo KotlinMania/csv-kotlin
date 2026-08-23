@@ -352,6 +352,20 @@ public class ByteRecord : Iterable<ByteArray> {
 
     override fun iterator(): ByteRecordIter = iter()
 
+    /**
+     * Deserialize this record into [T] using the given [deserializer].
+     */
+    public fun <T> deserialize(
+        deserializer: kotlinx.serialization.DeserializationStrategy<T>,
+        headers: ByteRecord? = null,
+    ): Result<T> = CsvDeserializer.deserialize(this, deserializer, headers)
+
+    /**
+     * Deserialize this record into [T] using the default serializer.
+     */
+    public inline fun <reified T> deserialize(headers: ByteRecord? = null): Result<T> =
+        deserialize(kotlinx.serialization.serializer(), headers)
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is ByteRecord) return false
@@ -402,6 +416,8 @@ public class ByteRecord : Iterable<ByteArray> {
         public fun new(): ByteRecord = ByteRecord()
 
         public fun default(): ByteRecord = new()
+
+        public fun b(s: String): ByteArray = s.encodeToByteArray()
 
         public fun withCapacity(buffer: Int, fields: Int): ByteRecord =
             ByteRecord(buffer, fields)

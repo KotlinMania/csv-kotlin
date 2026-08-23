@@ -199,6 +199,20 @@ public class StringRecord private constructor(
 
     override fun iterator(): StringRecordIter = iter()
 
+    /**
+     * Deserialize this record into [T] using the given [deserializer].
+     */
+    public fun <T> deserialize(
+        deserializer: kotlinx.serialization.DeserializationStrategy<T>,
+        headers: StringRecord? = null,
+    ): Result<T> = CsvDeserializer.deserialize(this, deserializer, headers)
+
+    /**
+     * Deserialize this record into [T] using the default serializer.
+     */
+    public inline fun <reified T> deserialize(headers: StringRecord? = null): Result<T> =
+        deserialize(kotlinx.serialization.serializer(), headers)
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is StringRecord) return false

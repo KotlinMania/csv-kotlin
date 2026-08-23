@@ -52,8 +52,15 @@ public class CsvError(
             }
         }
 
+    public fun source(): Throwable? = cause
+
     public companion object {
         public fun new(kind: ErrorKind): CsvError = CsvError(kind)
+
+        public fun from(kind: ErrorKind): CsvError = CsvError(kind)
+
+        public fun from(cause: Throwable): CsvError =
+            if (cause is CsvError) cause else CsvError(ErrorKind.Io(cause.message ?: "IO error", cause))
     }
 }
 

@@ -1,6 +1,8 @@
 // port-lint: source error.rs
 package io.github.kotlinmania.csv
 
+public typealias Error = CsvError
+
 /**
  * An error that can occur when processing CSV data.
  *
@@ -16,6 +18,8 @@ public class CsvError(
     public fun isIoError(): Boolean = kind is ErrorKind.Io
 
     public fun position(): Position? = kind.position()
+
+    public fun fmt(): String = toString()
 
     override fun toString(): String =
         when (kind) {
@@ -61,6 +65,8 @@ public sealed class ErrorKind {
             else -> null
         }
 
+    public open fun fmt(): String = toString()
+
     public data class Io(
         val message: String,
         val cause: Throwable? = null,
@@ -99,6 +105,8 @@ public class FromUtf8Error(
     public fun intoByteRecord(): ByteRecord = record
 
     public fun utf8Error(): Utf8Error = err
+
+    public fun fmt(): String = toString()
 }
 
 /**
@@ -111,6 +119,8 @@ public data class Utf8Error(
     public fun field(): Int = field
 
     public fun validUpTo(): Int = validUpTo
+
+    public fun fmt(): String = toString()
 
     override fun toString(): String =
         "invalid utf-8: invalid UTF-8 in field $field near byte index $validUpTo"
@@ -130,4 +140,6 @@ public class IntoInnerError(
     public fun intoError(): Throwable = error
 
     public fun intoInner(): Any? = writer
+
+    public fun fmt(): String = toString()
 }

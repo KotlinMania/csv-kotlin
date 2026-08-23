@@ -12,6 +12,8 @@ package io.github.kotlinmania.csv
 internal class Bytes(
     val data: UByteArray,
 ) {
+    fun fmt(): String = toString()
+
     override fun toString(): String {
         val sb = StringBuilder()
         sb.append('"')

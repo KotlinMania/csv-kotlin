@@ -363,4 +363,32 @@ class ReaderTest {
         val rec = StringRecord.new()
         assertFalse(rdr.readRecord(rec).getOrThrow())
     }
+
+    @Test
+    fun readerParityMethods() {
+        val data = b("a,b,c\nd,e,f\n")
+        val rdr =
+            ReaderBuilder
+                .default()
+                .hasHeaders(false)
+                .quoting(true)
+                .ascii(true)
+                .nfa(true)
+                .fromReader(data)
+
+        assertEquals(data.size, rdr.getRef().size)
+        assertFalse(rdr.isDone())
+
+        val byteRecords = rdr.intoByteRecords().toList()
+        assertEquals(2, byteRecords.size)
+        assertTrue(rdr.isDone())
+        assertEquals(data.size, rdr.intoInner().size)
+
+        val rdr2 = Reader.fromString("1,2\n3,4\n")
+        val strRecords = rdr2.intoRecords().toList()
+        assertEquals(1, strRecords.size) // header consumed because default hasHeaders=true
+
+        val rdr3 = Reader.default()
+        assertTrue(rdr3.isDone())
+    }
 }

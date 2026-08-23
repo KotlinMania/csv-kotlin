@@ -94,6 +94,8 @@ public class WriterBuilder {
 
     public companion object {
         public fun new(): WriterBuilder = WriterBuilder()
+
+        public fun default(): WriterBuilder = new()
     }
 }
 
@@ -119,14 +121,48 @@ public class Writer internal constructor(
 
     public fun flush(): Result<Unit> = Result.success(Unit)
 
+    public fun flushBuf(): Result<Unit> = Result.success(Unit)
+
+    public fun getRef(): ByteArray = buffer.toByteArray()
+
     public fun intoInner(): Result<ByteArray> {
         val result = buffer.toByteArray()
         return Result.success(result)
     }
 
+    public fun intoString(): Result<String> = Result.success(asString())
+
     public fun asByteArray(): ByteArray = buffer.toByteArray()
 
     public fun asString(): String = buffer.toByteArray().decodeToString()
+
+    public fun wtrAsString(): String = asString()
+
+    public fun clear() {
+        buffer.clear()
+        expectedFieldCount = null
+        fieldCountInCurrentRecord = 0
+        recordStarted = false
+    }
+
+    public fun checkFieldCount(count: Int): Result<Unit> {
+        if (!flexible) {
+            val expected = expectedFieldCount
+            if (expected != null && count != expected) {
+                return Result.failure(
+                    CsvError(
+                        ErrorKind.UnequalLengths(
+                            null,
+                            expected.toULong(),
+                            count.toULong(),
+                        ),
+                    ),
+                )
+            }
+            expectedFieldCount = count
+        }
+        return Result.success(Unit)
+    }
 
     public fun writeByteRecord(record: ByteRecord): Result<Unit> {
         val count = record.len()
@@ -293,5 +329,7 @@ public class Writer internal constructor(
 
     public companion object {
         public fun new(): Writer = WriterBuilder.new().fromWriter()
+
+        public fun default(): Writer = new()
     }
 }

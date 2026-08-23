@@ -132,6 +132,11 @@ public class StringRecord private constructor(
     public fun iterEq(other: StringRecord): Boolean = record.iterEq(other.asByteRecord())
 
     /**
+     * Compare this record with another string record for field equality.
+     */
+    public fun eq(other: StringRecord): Boolean = this == other
+
+    /**
      * Compare this record with a list of strings for field equality.
      */
     public fun iterEq(other: List<String>): Boolean {
@@ -141,6 +146,41 @@ public class StringRecord private constructor(
         }
         return true
     }
+
+    /**
+     * Compare this record with a list of strings for field equality.
+     */
+    public fun eq(other: List<String>): Boolean = iterEq(other)
+
+    /**
+     * Format this record for debugging purposes.
+     */
+    public fun fmt(): String = toString()
+
+    /**
+     * Return the field at index [index], or throw an [IndexOutOfBoundsException].
+     */
+    public fun index(index: Int): String =
+        this[index] ?: throw IndexOutOfBoundsException("index out of bounds: $index (len: ${len()})")
+
+    /**
+     * Extend this record with fields from the given iterable.
+     */
+    public fun extend(iter: Iterable<String>) {
+        for (field in iter) {
+            pushField(field)
+        }
+    }
+
+    /**
+     * Convert this record into an iterator over its fields.
+     */
+    public fun intoIter(): StringRecordIter = iter()
+
+    /**
+     * Read the next record from the given reader into this record.
+     */
+    public fun read(reader: Reader): Result<Boolean> = reader.readRecord(this)
 
     /**
      * Return a reference to this record's raw [ByteRecord].
@@ -175,6 +215,8 @@ public class StringRecord private constructor(
     public companion object {
         public fun new(): StringRecord = StringRecord()
 
+        public fun default(): StringRecord = new()
+
         public fun withCapacity(buffer: Int, fields: Int): StringRecord =
             StringRecord(buffer, fields)
 
@@ -203,6 +245,8 @@ public class StringRecord private constructor(
             for (f in fields) rec.pushField(f)
             return rec
         }
+
+        public fun fromIter(iter: Iterable<String>): StringRecord = from(iter.toList())
     }
 }
 
@@ -225,6 +269,11 @@ public class StringRecordIter internal constructor(
      * Returns the number of remaining elements in this iterator.
      */
     public fun count(): Int = iter.count()
+
+    /**
+     * Returns the lower and upper bounds of remaining elements.
+     */
+    public fun sizeHint(): Pair<Int, Int?> = count() to count()
 }
 
 internal fun isUnicodeWhitespace(c: Char): Boolean {

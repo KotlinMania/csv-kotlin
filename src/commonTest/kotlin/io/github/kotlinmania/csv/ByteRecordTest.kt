@@ -303,4 +303,37 @@ class ByteRecordTest {
         assertEquals("foobar", truncated.asSlice().decodeToString())
         assertTrue(rec.iterEq(truncated))
     }
+
+    @Test
+    fun eqAndExtendAndIndexAndParts() {
+        val rec = ByteRecord.fromIter(listOf(b("a"), b("b")))
+        assertTrue(rec.eq(ByteRecord.from(listOf(b("a"), b("b")))))
+        assertTrue(rec.eq(listOf(b("a"), b("b"))))
+        assertEquals("a", rec.index(0).decodeToString())
+        assertEquals("b", rec.index(1).decodeToString())
+        assertEquals(listOf(1, 2), rec.ends())
+        assertEquals(1, rec.end(0))
+        assertEquals(2, rec.end(1))
+
+        rec.extend(listOf(b("c"), b("d")))
+        assertEquals(4, rec.len())
+        val parts = rec.asParts()
+        assertEquals("abcd", parts.first.decodeToString())
+        assertEquals(listOf(1, 2, 3, 4), parts.second)
+
+        rec.setLen(2)
+        assertEquals(2, rec.len())
+
+        val iter = rec.intoIter()
+        assertEquals(2 to 2, iter.sizeHint())
+        assertEquals("a", iter.next().decodeToString())
+    }
+
+    @Test
+    fun trimAscii() {
+        val rec = ByteRecord.from(listOf(b("  hello  "), b("\tworld\r\n")))
+        rec.trimAscii()
+        assertEquals("hello", rec[0]?.decodeToString())
+        assertEquals("world", rec[1]?.decodeToString())
+    }
 }

@@ -256,6 +256,27 @@ public class Reader internal constructor(
 
     public fun intoRecords(): StringRecordsIntoIter = StringRecordsIntoIter(this)
 
+    public fun <D> deserialize(
+        deserializer: kotlinx.serialization.DeserializationStrategy<D>,
+    ): DeserializeRecordsIter<D> = DeserializeRecordsIter(this, deserializer)
+
+    public fun <D> intoDeserialize(
+        deserializer: kotlinx.serialization.DeserializationStrategy<D>,
+    ): DeserializeRecordsIntoIter<D> = DeserializeRecordsIntoIter(this, deserializer)
+
+    public inline fun <reified D> deserialize(): DeserializeRecordsIter<D> =
+        deserialize(kotlinx.serialization.serializer())
+
+    public inline fun <reified D> intoDeserialize(): DeserializeRecordsIntoIter<D> =
+        intoDeserialize(kotlinx.serialization.serializer())
+
+    public fun setHeadersImpl(headers: ByteRecord) {
+        setByteHeaders(headers)
+    }
+
+    public fun readByteRecordImpl(record: ByteRecord): Result<Boolean> =
+        readByteRecord(record)
+
     private fun readNextRawRecord(record: ByteRecord, isHeader: Boolean): Result<Boolean> {
         record.clear()
         val shouldTrim =
@@ -527,35 +548,73 @@ public class ByteRecordsIntoIter internal constructor(
 }
 
 /**
- * Whether EOF of the underlying reader has been reached or not.
+ * An iterator over deserialized records.
  */
-public enum class ReaderEofState {
-    NOT_EOF,
-    EOF,
-    IO_ERROR,
+public class DeserializeRecordsIter<D> internal constructor(
+    private val rdr: Reader,
+    private val deserializer: kotlinx.serialization.DeserializationStrategy<D>,
+) : Iterator<Result<D>>,
+    Iterable<Result<D>> {
+    private val stringIter = StringRecordsIter(rdr)
+    private var headers: StringRecord? = null
+    private var headersRead = false
+
+    public fun reader(): Reader = rdr
+
+    public fun readerMut(): Reader = rdr
+
+    override fun iterator(): Iterator<Result<D>> = this
+
+    override fun hasNext(): Boolean = stringIter.hasNext()
+
+    override fun next(): Result<D> {
+        if (!headersRead) {
+            headers = rdr.headers().getOrNull()
+            headersRead = true
+        }
+        val recordRes = stringIter.next()
+        val record = recordRes.getOrElse { return Result.failure(it) }
+        return record.deserialize(deserializer, headers)
+    }
 }
 
 /**
- * Headers representation.
+ * An owned iterator over deserialized records.
  */
-public class Headers(
-    public val record: ByteRecord,
-    public val pos: Position?,
-) {
-    public fun clone(): Headers = Headers(record.clone(), pos?.copy())
+public class DeserializeRecordsIntoIter<D> internal constructor(
+    private val rdr: Reader,
+    private val deserializer: kotlinx.serialization.DeserializationStrategy<D>,
+) : Iterator<Result<D>>,
+    Iterable<Result<D>> {
+    private val iter = DeserializeRecordsIter(rdr, deserializer)
+
+    public fun reader(): Reader = rdr
+
+    public fun readerMut(): Reader = rdr
+
+    public fun intoReader(): Reader = rdr
+
+    override fun iterator(): Iterator<Result<D>> = iter
+
+    override fun hasNext(): Boolean = iter.hasNext()
+
+    override fun next(): Result<D> {
+        if (!hasNext()) throw NoSuchElementException("No more records")
+        return iter.next()
+    }
 }
 
 /**
- * Reader state machine representation.
+ * Internal testing helper to create byte array from string.
  */
-public class ReaderState(
-    public var headers: Headers? = null,
-    public var hasHeaders: Boolean = true,
-    public var flexible: Boolean = false,
-    public var trim: Trim = Trim.NONE,
-    public var firstFieldCount: ULong? = null,
-    public var curPos: Position = Position.new(),
-    public var first: Boolean = true,
-    public var seeked: Boolean = false,
-    public var eof: ReaderEofState = ReaderEofState.NOT_EOF,
-)
+internal fun b(s: String): ByteArray = s.encodeToByteArray()
+
+/**
+ * Internal testing helper to create string from byte array.
+ */
+internal fun s(b: ByteArray): String = b.decodeToString()
+
+/**
+ * Internal testing helper to create Position.
+ */
+internal fun newpos(byte: ULong, line: ULong, record: ULong): Position = Position(byte, line, record)

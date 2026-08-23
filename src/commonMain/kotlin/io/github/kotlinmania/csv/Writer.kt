@@ -244,6 +244,81 @@ public class Writer internal constructor(
     public fun writeRecord(record: Array<String>): Result<Unit> =
         writeRecord(record.asIterable())
 
+    /**
+     * Serialize a value using the given [serializer].
+     * If headers are enabled and no records have been written yet, headers are automatically written.
+     */
+    public fun <T> serialize(
+        serializer: kotlinx.serialization.SerializationStrategy<T>,
+        value: T,
+    ): Result<Unit> {
+        if (hasHeaders && !recordStarted && buffer.isEmpty()) {
+            val hRes = CsvSerializer.serializeHeader(this, serializer.descriptor)
+            if (hRes.isFailure) return Result.failure(hRes.exceptionOrNull()!!)
+        }
+        return CsvSerializer.serialize(this, serializer, value)
+    }
+
+    /**
+     * Serialize a value using the default serializer.
+     */
+    public inline fun <reified T> serialize(value: T): Result<Unit> =
+        serialize(kotlinx.serialization.serializer(), value)
+
+    /**
+     * Serialize a value along with its struct headers.
+     */
+    public fun <T> serializeWithHeaders(
+        serializer: kotlinx.serialization.SerializationStrategy<T>,
+        value: T,
+    ): Result<Unit> {
+        val hRes = CsvSerializer.serializeHeader(this, serializer.descriptor)
+        if (hRes.isFailure) return Result.failure(hRes.exceptionOrNull()!!)
+        return CsvSerializer.serialize(this, serializer, value)
+    }
+
+    /**
+     * Serialize a value along with its struct headers using the default serializer.
+     */
+    public inline fun <reified T> serializeWithHeaders(value: T): Result<Unit> =
+        serializeWithHeaders(kotlinx.serialization.serializer(), value)
+
+    /**
+     * Serialize a value without writing struct headers.
+     */
+    public fun <T> serializeNoHeaders(
+        serializer: kotlinx.serialization.SerializationStrategy<T>,
+        value: T,
+    ): Result<Unit> = CsvSerializer.serialize(this, serializer, value)
+
+    /**
+     * Serialize a value without writing struct headers using the default serializer.
+     */
+    public inline fun <reified T> serializeNoHeaders(value: T): Result<Unit> =
+        serializeNoHeaders(kotlinx.serialization.serializer(), value)
+
+    /**
+     * Serialize a 128-bit value without headers.
+     */
+    public fun serializeNoHeaders128(value: Long): Result<Unit> {
+        writeField(value.toString())
+        return endRecord()
+    }
+
+    /**
+     * Serialize a tuple of items as a record.
+     */
+    public fun serializeTuple(items: List<Any?>): Result<Unit> {
+        for (item in items) {
+            writeField(item?.toString() ?: "")
+        }
+        return endRecord()
+    }
+
+    public fun drop() {
+        flush()
+    }
+
     public fun writeField(field: CharSequence): Result<Unit> =
         writeByteField(field.toString().encodeToByteArray())
 

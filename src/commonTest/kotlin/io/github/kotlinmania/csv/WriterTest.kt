@@ -137,4 +137,20 @@ class WriterTest {
         val wtr2 = Writer.default()
         assertEquals("", wtr2.asString())
     }
+
+    @Test
+    fun writerFieldImplAndDelimiters() {
+        val wtr = Writer.new()
+        wtr.writeFieldImpl("first".encodeToByteArray())
+        wtr.writeFieldImpl("second".encodeToByteArray())
+        wtr.writeTerminatorIntoBuffer()
+        assertEquals("first,second\n", wtr.asString())
+
+        val checkRes = wtr.checkFieldCount(2)
+        assertEquals(Result.success(Unit), checkRes)
+
+        wtr.clear()
+        wtr.writeDelimiter()
+        assertEquals(",", wtr.asString())
+    }
 }

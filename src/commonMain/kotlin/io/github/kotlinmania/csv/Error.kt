@@ -51,6 +51,10 @@ public class CsvError(
                 }
             }
         }
+
+    public companion object {
+        public fun new(kind: ErrorKind): CsvError = CsvError(kind)
+    }
 }
 
 /**
@@ -107,6 +111,12 @@ public class FromUtf8Error(
     public fun utf8Error(): Utf8Error = err
 
     public fun fmt(): String = toString()
+
+    public fun intoParts(): Pair<ByteRecord, Utf8Error> = record to err
+
+    public companion object {
+        public fun new(record: ByteRecord, err: Utf8Error): FromUtf8Error = FromUtf8Error(record, err)
+    }
 }
 
 /**
@@ -142,4 +152,8 @@ public class IntoInnerError(
     public fun intoInner(): Any? = writer
 
     public fun fmt(): String = toString()
+
+    public companion object {
+        public fun new(writer: Any?, error: Throwable): IntoInnerError = IntoInnerError(writer, error)
+    }
 }

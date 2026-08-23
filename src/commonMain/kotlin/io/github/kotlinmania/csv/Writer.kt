@@ -234,6 +234,16 @@ public class Writer internal constructor(
     public fun writeField(field: CharSequence): Result<Unit> =
         writeByteField(field.toString().encodeToByteArray())
 
+    public fun writeFieldImpl(field: ByteArray): Result<Unit> = writeByteField(field)
+
+    public fun writeDelimiter() {
+        buffer.add(delimiter)
+    }
+
+    public fun writeTerminatorIntoBuffer() {
+        writeTerminator()
+    }
+
     public fun writeByteField(field: ByteArray): Result<Unit> {
         if (fieldCountInCurrentRecord > 0) {
             buffer.add(delimiter)

@@ -336,4 +336,19 @@ class ByteRecordTest {
         assertEquals("hello", rec[0]?.decodeToString())
         assertEquals("world", rec[1]?.decodeToString())
     }
+
+    @Test
+    fun testExpandFieldsAndTrimHelpers() {
+        val rec = ByteRecord(2, 2)
+        rec.pushField(b("abc"))
+        rec.expandFields()
+        rec.expandEnds()
+        assertEquals("abc", rec[0]?.decodeToString())
+
+        val trimmedStart = ByteRecord.trimAsciiStart(b("   test   "))
+        assertEquals("test   ", trimmedStart.decodeToString())
+
+        val trimmedEnd = ByteRecord.trimAsciiEnd(b("   test   "))
+        assertEquals("   test", trimmedEnd.decodeToString())
+    }
 }

@@ -259,6 +259,21 @@ public class ByteRecord : Iterable<ByteArray> {
     }
 
     /**
+     * Expand the capacity for storing fields.
+     */
+    public fun expandFields() {
+        val newCap = maxOf(4, fields.size * 2)
+        fields = fields.copyOf(newCap)
+    }
+
+    /**
+     * Expand the capacity for storing field ending positions.
+     */
+    public fun expandEnds() {
+        // Kotlin ArrayList handles its own growth, no-op for parity
+    }
+
+    /**
      * Trim ASCII whitespace from all fields in this record.
      */
     public fun trimAscii() {

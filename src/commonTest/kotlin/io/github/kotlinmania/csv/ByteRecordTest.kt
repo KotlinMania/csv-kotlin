@@ -171,8 +171,8 @@ class ByteRecordTest {
         rec.pushField(byteArrayOf('b'.code.toByte(), 0xFF.toByte(), 'a'.code.toByte(), 'r'.code.toByte()))
 
         val err = StringRecord.fromByteRecord(rec).exceptionOrNull() as FromUtf8Error
-        assertEquals(1, err.utf8Error().field())
-        assertEquals(1, err.utf8Error().validUpTo())
+        assertEquals(1, err.utf8Error().field)
+        assertEquals(1, err.utf8Error().validUpTo)
     }
 
     @Test
@@ -181,8 +181,8 @@ class ByteRecordTest {
         rec.pushField(byteArrayOf(0xFF.toByte()))
 
         val err = StringRecord.fromByteRecord(rec).exceptionOrNull() as FromUtf8Error
-        assertEquals(0, err.utf8Error().field())
-        assertEquals(0, err.utf8Error().validUpTo())
+        assertEquals(0, err.utf8Error().field)
+        assertEquals(0, err.utf8Error().validUpTo)
     }
 
     @Test
@@ -191,8 +191,8 @@ class ByteRecordTest {
         rec.pushField(byteArrayOf('a'.code.toByte(), 0xFF.toByte()))
 
         val err = StringRecord.fromByteRecord(rec).exceptionOrNull() as FromUtf8Error
-        assertEquals(0, err.utf8Error().field())
-        assertEquals(1, err.utf8Error().validUpTo())
+        assertEquals(0, err.utf8Error().field)
+        assertEquals(1, err.utf8Error().validUpTo)
     }
 
     @Test
@@ -205,8 +205,8 @@ class ByteRecordTest {
         rec.pushField(byteArrayOf('x'.code.toByte(), 'y'.code.toByte(), 'z'.code.toByte(), 0xFF.toByte()))
 
         val err = StringRecord.fromByteRecord(rec).exceptionOrNull() as FromUtf8Error
-        assertEquals(4, err.utf8Error().field())
-        assertEquals(3, err.utf8Error().validUpTo())
+        assertEquals(4, err.utf8Error().field)
+        assertEquals(3, err.utf8Error().validUpTo)
     }
 
     @Test
@@ -219,8 +219,8 @@ class ByteRecordTest {
         rec.pushField(byteArrayOf(0xFF.toByte(), 'x'.code.toByte(), 'y'.code.toByte(), 'z'.code.toByte()))
 
         val err = StringRecord.fromByteRecord(rec).exceptionOrNull() as FromUtf8Error
-        assertEquals(4, err.utf8Error().field())
-        assertEquals(0, err.utf8Error().validUpTo())
+        assertEquals(4, err.utf8Error().field)
+        assertEquals(0, err.utf8Error().validUpTo)
     }
 
     @Test
@@ -230,8 +230,8 @@ class ByteRecordTest {
         rec.pushField(byteArrayOf(0x91.toByte(), 'b'.code.toByte()))
 
         val err = StringRecord.fromByteRecord(rec).exceptionOrNull() as FromUtf8Error
-        assertEquals(0, err.utf8Error().field())
-        assertEquals(1, err.utf8Error().validUpTo())
+        assertEquals(0, err.utf8Error().field)
+        assertEquals(1, err.utf8Error().validUpTo)
     }
 
     @Test

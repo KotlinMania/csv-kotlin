@@ -442,28 +442,3 @@ public enum class HeaderState {
     NONE,
 }
 
-/**
- * Writer state machine representation.
- */
-public class WriterState(
-    public var header: HeaderState = HeaderState.WRITE,
-    public var flexible: Boolean = false,
-    public var firstFieldCount: ULong? = null,
-    public var fieldsWritten: ULong = 0uL,
-    public var panicked: Boolean = false,
-)
-
-/**
- * Internal buffer for buffering writes.
- */
-public class Buffer(
-    public val bytes: ArrayList<Byte> = ArrayList(),
-) {
-    public fun clear() {
-        bytes.clear()
-    }
-
-    public fun len(): Int = bytes.size
-
-    public fun isEmpty(): Boolean = bytes.isEmpty()
-}

@@ -1,6 +1,9 @@
 // port-lint: source deserializer.rs
+@file:OptIn(kotlin.experimental.ExperimentalObjCRefinement::class)
+
 package io.github.kotlinmania.csv
 
+import kotlin.native.HiddenFromObjC
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.StructureKind
@@ -10,8 +13,47 @@ import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
 
 /**
+ * Deserializes a [StringRecord] into [T] using the given [DeserializationStrategy].
+ */
+@HiddenFromObjC
+public fun <T> deserializeStringRecord(
+    record: StringRecord,
+    deserializer: DeserializationStrategy<T>,
+    headers: StringRecord? = null,
+): Result<T> = CsvDeserializer.deserialize(record, deserializer, headers)
+
+/**
+ * Deserializes a [StringRecord] into [T] using the default serializer.
+ */
+@HiddenFromObjC
+public inline fun <reified T> deserializeStringRecord(
+    record: StringRecord,
+    headers: StringRecord? = null,
+): Result<T> = CsvDeserializer.deserialize(record, kotlinx.serialization.serializer(), headers)
+
+/**
+ * Deserializes a [ByteRecord] into [T] using the given [DeserializationStrategy].
+ */
+@HiddenFromObjC
+public fun <T> deserializeByteRecord(
+    record: ByteRecord,
+    deserializer: DeserializationStrategy<T>,
+    headers: ByteRecord? = null,
+): Result<T> = CsvDeserializer.deserialize(record, deserializer, headers)
+
+/**
+ * Deserializes a [ByteRecord] into [T] using the default serializer.
+ */
+@HiddenFromObjC
+public inline fun <reified T> deserializeByteRecord(
+    record: ByteRecord,
+    headers: ByteRecord? = null,
+): Result<T> = CsvDeserializer.deserialize(record, kotlinx.serialization.serializer(), headers)
+
+/**
  * Deserializes values from CSV records using kotlinx.serialization.
  */
+@HiddenFromObjC
 public object CsvDeserializer {
     /**
      * Deserializes a [StringRecord] into [T] using the given [DeserializationStrategy].
@@ -82,7 +124,7 @@ public object CsvDeserializer {
  * An [AbstractDecoder] that reads elements sequentially or by header name from a list of CSV field strings.
  */
 @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
-public class CsvRecordDecoder(
+internal class CsvRecordDecoder(
     private val fields: List<String>,
     private val headers: List<String>?,
     private val position: Position?,

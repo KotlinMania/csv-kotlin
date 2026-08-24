@@ -81,6 +81,8 @@ public class ByteRecord : Iterable<ByteArray> {
      *
      * If no such field exists at the given index, then return null.
      */
+    @OptIn(kotlin.experimental.ExperimentalObjCRefinement::class)
+    @kotlin.native.HiddenFromObjC
     public fun range(index: Int): IntRange? {
         if (index < 0 || index >= ends.size) return null
         val start = if (index == 0) 0 else ends[index - 1]
@@ -497,20 +499,52 @@ public class ByteRecordIter internal constructor(
     public fun sizeHint(): Pair<Int, Int?> = count() to count()
 }
 
-/**
- * Inner storage for a ByteRecord.
- */
-public class ByteRecordInner(
-    public var pos: Position?,
-    public var fields: ByteArray,
-    public var bounds: Bounds,
-)
 
 /**
- * Bounds representation for field offsets.
+ * A position in CSV data.
+ *
+ * A position is used to report errors in CSV data. All positions include the
+ * byte offset, line number and record index at which the error occurred.
+ *
+ * Byte offsets and record indices start at `0`. Line numbers start at `1`.
+ *
+ * A CSV reader will automatically assign the position of each record.
  */
-public class Bounds(
-    public val ends: MutableList<Int> = ArrayList(),
+public data class Position(
+    var byte: ULong = 0uL,
+    var line: ULong = 1uL,
+    var record: ULong = 0uL,
 ) {
-    public fun ends(): List<Int> = ends
+    /**
+     * Set the byte offset of this position.
+     */
+    public fun setByte(byte: ULong): Position {
+        this.byte = byte
+        return this
+    }
+
+    /**
+     * Set the line number of this position.
+     *
+     * If the line number is less than `1`, then this method throws [IllegalArgumentException].
+     */
+    public fun setLine(line: ULong): Position {
+        require(line > 0uL) { "line number must be > 0" }
+        this.line = line
+        return this
+    }
+
+    /**
+     * Set the record index of this position.
+     */
+    public fun setRecord(record: ULong): Position {
+        this.record = record
+        return this
+    }
+
+    public companion object {
+        public fun new(): Position = Position(0uL, 1uL, 0uL)
+    }
 }
+
+

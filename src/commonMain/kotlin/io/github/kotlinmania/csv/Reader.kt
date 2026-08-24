@@ -150,9 +150,9 @@ public class Reader internal constructor(
         if (hRes.isFailure) {
             return Result.failure(hRes.exceptionOrNull()!!)
         }
-        offset = pos.byte().toInt().coerceIn(0, bytes.size)
-        line = pos.line()
-        recordNum = pos.record()
+        offset = pos.byte.toInt().coerceIn(0, bytes.size)
+        line = pos.line
+        recordNum = pos.record
         return Result.success(Unit)
     }
 

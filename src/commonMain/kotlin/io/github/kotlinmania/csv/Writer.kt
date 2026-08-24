@@ -443,19 +443,3 @@ public class Writer internal constructor(
     }
 }
 
-internal enum class WriterState {
-    Start,
-    Record,
-}
-
-internal class Buffer(
-    val buf: MutableList<Byte> = mutableListOf(),
-)
-
-internal class MarkWriteAndFlush(
-    val wtr: Writer,
-)
-
-internal data class Row(
-    val fields: List<String> = emptyList(),
-)

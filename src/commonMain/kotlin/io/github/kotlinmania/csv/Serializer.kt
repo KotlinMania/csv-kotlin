@@ -213,16 +213,16 @@ internal class SeRecord(
 /**
  * State machine for [SeHeader].
  */
-internal sealed class HeaderState {
-    public object Write : HeaderState()
+internal sealed class SeHeaderState {
+    public object Write : SeHeaderState()
 
     public data class ErrorIfWrite(
         public val err: CsvError,
-    ) : HeaderState()
+    ) : SeHeaderState()
 
-    public object EncounteredStructField : HeaderState()
+    public object EncounteredStructField : SeHeaderState()
 
-    public object InStructField : HeaderState()
+    public object InStructField : SeHeaderState()
 }
 
 internal fun errorScalarOutsideStruct(name: Any?): CsvError =
@@ -236,7 +236,7 @@ internal fun errorContainerInsideStruct(name: Any?): CsvError =
  */
 internal class SeHeader(
     public val wtr: Writer,
-    public var state: HeaderState = HeaderState.Write,
+    public var state: SeHeaderState = SeHeaderState.Write,
 ) : SerializeSeq,
     SerializeTuple,
     SerializeTupleStruct,
@@ -246,22 +246,22 @@ internal class SeHeader(
     SerializeStructVariant {
     public fun wroteHeader(): Boolean =
         when (state) {
-            HeaderState.Write, is HeaderState.ErrorIfWrite -> false
-            HeaderState.EncounteredStructField, HeaderState.InStructField -> true
+            SeHeaderState.Write, is SeHeaderState.ErrorIfWrite -> false
+            SeHeaderState.EncounteredStructField, SeHeaderState.InStructField -> true
         }
 
     public fun handleScalar(name: Any?): Result<Unit> =
         when (val s = state) {
-            HeaderState.Write -> {
-                state = HeaderState.ErrorIfWrite(errorScalarOutsideStruct(name))
+            SeHeaderState.Write -> {
+                state = SeHeaderState.ErrorIfWrite(errorScalarOutsideStruct(name))
                 Result.success(Unit)
             }
-            is HeaderState.ErrorIfWrite, HeaderState.InStructField -> Result.success(Unit)
-            HeaderState.EncounteredStructField -> Result.failure(errorScalarOutsideStruct(name))
+            is SeHeaderState.ErrorIfWrite, SeHeaderState.InStructField -> Result.success(Unit)
+            SeHeaderState.EncounteredStructField -> Result.failure(errorScalarOutsideStruct(name))
         }
 
     public fun handleContainer(name: Any?): Result<SeHeader> =
-        if (state is HeaderState.InStructField) {
+        if (state is SeHeaderState.InStructField) {
             Result.failure(errorContainerInsideStruct(name))
         } else {
             Result.success(this)
@@ -338,19 +338,19 @@ internal class SeHeader(
 
     override fun serializeField(key: String, value: Any?): Result<Unit> {
         val oldState = state
-        state = HeaderState.EncounteredStructField
-        if (oldState is HeaderState.ErrorIfWrite) {
+        state = SeHeaderState.EncounteredStructField
+        if (oldState is SeHeaderState.ErrorIfWrite) {
             return Result.failure(oldState.err)
         }
         val writeRes = wtr.writeField(key)
         if (writeRes.isFailure) return writeRes
 
-        state = HeaderState.InStructField
+        state = SeHeaderState.InStructField
         if (value is String) {
             val res = handleScalar(value)
             if (res.isFailure) return res
         }
-        state = HeaderState.EncounteredStructField
+        state = SeHeaderState.EncounteredStructField
         return Result.success(Unit)
     }
 

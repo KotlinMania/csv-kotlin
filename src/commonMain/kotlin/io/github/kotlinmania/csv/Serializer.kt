@@ -73,9 +73,14 @@ public object CsvSerializer {
         value: T,
     ): Result<Unit> =
         try {
-            val encoder = CsvRecordEncoder(writer)
-            serializer.serialize(encoder, value)
-            writer.endRecord()
+            if (value is ByteArray) {
+                writer.writeField(value)
+                writer.endRecord()
+            } else {
+                val encoder = CsvRecordEncoder(writer)
+                serializer.serialize(encoder, value)
+                writer.endRecord()
+            }
         } catch (e: Exception) {
             Result.failure(if (e is CsvError) e else CsvError(ErrorKind.Serialize(e.message ?: "Serialization failed")))
         }
@@ -155,7 +160,7 @@ internal class SeRecord(
 
     public fun serializeStr(value: String): Result<Unit> = wtr.writeField(value)
 
-    public fun serializeBytes(value: ByteArray): Result<Unit> = wtr.writeByteField(value)
+    public fun serializeBytes(value: ByteArray): Result<Unit> = wtr.writeField(value)
 
     public fun serializeNone(): Result<Unit> = wtr.writeField("")
 
@@ -425,6 +430,16 @@ internal class CsvRecordEncoder(
         depth--
     }
 
+    private var isUnsigned = false
+
+    override fun encodeInline(descriptor: SerialDescriptor): kotlinx.serialization.encoding.Encoder {
+        val name = descriptor.serialName
+        if (name == "kotlin.UInt" || name == "kotlin.ULong" || name == "kotlin.UByte" || name == "kotlin.UShort") {
+            isUnsigned = true
+        }
+        return this
+    }
+
     override fun encodeElement(descriptor: SerialDescriptor, index: Int): Boolean = true
 
     override fun encodeBoolean(value: Boolean) {
@@ -432,19 +447,39 @@ internal class CsvRecordEncoder(
     }
 
     override fun encodeByte(value: Byte) {
-        writer.writeField(value.toString())
+        if (isUnsigned) {
+            isUnsigned = false
+            writer.writeField(value.toUByte().toString())
+        } else {
+            writer.writeField(value.toString())
+        }
     }
 
     override fun encodeShort(value: Short) {
-        writer.writeField(value.toString())
+        if (isUnsigned) {
+            isUnsigned = false
+            writer.writeField(value.toUShort().toString())
+        } else {
+            writer.writeField(value.toString())
+        }
     }
 
     override fun encodeInt(value: Int) {
-        writer.writeField(value.toString())
+        if (isUnsigned) {
+            isUnsigned = false
+            writer.writeField(value.toUInt().toString())
+        } else {
+            writer.writeField(value.toString())
+        }
     }
 
     override fun encodeLong(value: Long) {
-        writer.writeField(value.toString())
+        if (isUnsigned) {
+            isUnsigned = false
+            writer.writeField(value.toULong().toString())
+        } else {
+            writer.writeField(value.toString())
+        }
     }
 
     override fun encodeFloat(value: Float) {

@@ -135,14 +135,56 @@ internal class CsvRecordDecoder(
     private var isHeaderMapped = false
     private var headerIndices: IntArray? = null
 
+    private var isUnsigned = false
+
+    override fun decodeInline(descriptor: SerialDescriptor): kotlinx.serialization.encoding.Decoder {
+        val name = descriptor.serialName
+        if (name == "kotlin.UInt" || name == "kotlin.ULong" || name == "kotlin.UByte" || name == "kotlin.UShort") {
+            isUnsigned = true
+        }
+        return this
+    }
+
     override fun beginStructure(descriptor: SerialDescriptor): CompositeDecoder {
+        if (fields.isEmpty() && descriptor.elementsCount > 0 && (0 until descriptor.elementsCount).any { !descriptor.isElementOptional(it) }) {
+            throw CsvError(
+                ErrorKind.Deserialize(
+                    pos = position,
+                    message = "cannot deserialize non-optional fields for ${descriptor.serialName} from empty record",
+                ),
+            )
+        }
+        if (descriptor.kind is StructureKind.LIST) {
+            val remainingFields =
+                if (currentField in fields.indices) {
+                    fields.subList(currentField, fields.size)
+                } else {
+                    emptyList()
+                }
+            return CsvRecordDecoder(
+                fields = remainingFields,
+                headers = null,
+                position = position,
+            )
+        }
         if (headers != null && (descriptor.kind is StructureKind.CLASS || descriptor.kind is StructureKind.OBJECT)) {
-            isHeaderMapped = true
-            headerIndices =
+            val decoder = CsvRecordDecoder(fields, headers, position)
+            decoder.isHeaderMapped = true
+            decoder.headerIndices =
                 IntArray(descriptor.elementsCount) { i ->
                     val name = descriptor.getElementName(i)
-                    headers.indexOf(name)
+                    val idx = headers.indexOf(name)
+                    if (idx == -1 && !descriptor.isElementOptional(i)) {
+                        throw CsvError(
+                            ErrorKind.Deserialize(
+                                pos = position,
+                                message = "field '$name' not found in headers $headers",
+                            ),
+                        )
+                    }
+                    idx
                 }
+            return decoder
         }
         return this
     }
@@ -160,6 +202,14 @@ internal class CsvRecordDecoder(
             return CompositeDecoder.DECODE_DONE
         }
 
+        if (descriptor.kind is StructureKind.LIST) {
+            if (currentIndex < fields.size) {
+                currentField = currentIndex
+                return currentIndex++
+            }
+            return CompositeDecoder.DECODE_DONE
+        }
+
         if (currentIndex < fields.size && currentIndex < descriptor.elementsCount) {
             currentField = currentIndex
             return currentIndex++
@@ -167,14 +217,24 @@ internal class CsvRecordDecoder(
         return CompositeDecoder.DECODE_DONE
     }
 
-    private fun getCurrentValue(): String =
-        if (currentField in fields.indices) {
+    private fun getCurrentValue(): String {
+        if (fields.isEmpty() && currentField == 0) {
+            throw CsvError(
+                ErrorKind.Deserialize(
+                    pos = position,
+                    message = "expected field, but got end of row",
+                ),
+            )
+        }
+        return if (currentField in fields.indices) {
             fields[currentField]
         } else {
             ""
         }
+    }
 
     override fun decodeNotNullMark(): Boolean {
+        if (fields.isEmpty()) return false
         val v = getCurrentValue()
         return v.isNotEmpty()
     }
@@ -199,7 +259,22 @@ internal class CsvRecordDecoder(
 
     override fun decodeByte(): Byte {
         val s = getCurrentValue().trim()
-        return s.toByteOrNull()
+        val parsed =
+            if (isUnsigned) {
+                isUnsigned = false
+                if (s.startsWith("0x", ignoreCase = true)) {
+                    s.substring(2).toUByteOrNull(16)?.toByte()
+                } else {
+                    s.toUByteOrNull()?.toByte()
+                }
+            } else {
+                if (s.startsWith("0x", ignoreCase = true)) {
+                    s.substring(2).toByteOrNull(16)
+                } else {
+                    s.toByteOrNull()
+                }
+            }
+        return parsed
             ?: throw CsvError(
                 ErrorKind.Deserialize(
                     pos = position,
@@ -210,7 +285,22 @@ internal class CsvRecordDecoder(
 
     override fun decodeShort(): Short {
         val s = getCurrentValue().trim()
-        return s.toShortOrNull()
+        val parsed =
+            if (isUnsigned) {
+                isUnsigned = false
+                if (s.startsWith("0x", ignoreCase = true)) {
+                    s.substring(2).toUShortOrNull(16)?.toShort()
+                } else {
+                    s.toUShortOrNull()?.toShort()
+                }
+            } else {
+                if (s.startsWith("0x", ignoreCase = true)) {
+                    s.substring(2).toShortOrNull(16)
+                } else {
+                    s.toShortOrNull()
+                }
+            }
+        return parsed
             ?: throw CsvError(
                 ErrorKind.Deserialize(
                     pos = position,
@@ -221,7 +311,22 @@ internal class CsvRecordDecoder(
 
     override fun decodeInt(): Int {
         val s = getCurrentValue().trim()
-        return s.toIntOrNull()
+        val parsed =
+            if (isUnsigned) {
+                isUnsigned = false
+                if (s.startsWith("0x", ignoreCase = true)) {
+                    s.substring(2).toUIntOrNull(16)?.toInt()
+                } else {
+                    s.toUIntOrNull()?.toInt()
+                }
+            } else {
+                if (s.startsWith("0x", ignoreCase = true)) {
+                    s.substring(2).toIntOrNull(16)
+                } else {
+                    s.toIntOrNull()
+                }
+            }
+        return parsed
             ?: throw CsvError(
                 ErrorKind.Deserialize(
                     pos = position,
@@ -232,7 +337,22 @@ internal class CsvRecordDecoder(
 
     override fun decodeLong(): Long {
         val s = getCurrentValue().trim()
-        return s.toLongOrNull()
+        val parsed =
+            if (isUnsigned) {
+                isUnsigned = false
+                if (s.startsWith("0x", ignoreCase = true)) {
+                    s.substring(2).toULongOrNull(16)?.toLong()
+                } else {
+                    s.toULongOrNull()?.toLong()
+                }
+            } else {
+                if (s.startsWith("0x", ignoreCase = true)) {
+                    s.substring(2).toLongOrNull(16)
+                } else {
+                    s.toLongOrNull()
+                }
+            }
+        return parsed
             ?: throw CsvError(
                 ErrorKind.Deserialize(
                     pos = position,
@@ -280,13 +400,16 @@ internal class CsvRecordDecoder(
     override fun decodeString(): String = getCurrentValue()
 
     override fun decodeEnum(enumDescriptor: SerialDescriptor): Int {
-        val name = getCurrentValue()
+        val name = getCurrentValue().trim()
         val index = enumDescriptor.getElementIndex(name)
         if (index != CompositeDecoder.UNKNOWN_NAME) {
             return index
         }
         for (i in 0 until enumDescriptor.elementsCount) {
-            if (enumDescriptor.getElementName(i).equals(name, ignoreCase = true)) {
+            val elName = enumDescriptor.getElementName(i)
+            if (elName.equals(name, ignoreCase = true) ||
+                elName.replace("_", "").equals(name.replace("_", ""), ignoreCase = true)
+            ) {
                 return i
             }
         }
@@ -479,22 +602,40 @@ internal class DeByteRecord(
         DeserializeError(if (idx > 0) (idx - 1).toULong() else null, kind)
 }
 
-internal fun tryPositiveInteger128(s: String): ULong? = s.toULongOrNull()
+public fun tryPositiveInteger128(s: String): ULong? = s.toULongOrNull()
 
-internal fun tryNegativeInteger128(s: String): Long? = s.toLongOrNull()
+public fun tryNegativeInteger128(s: String): Long? = s.toLongOrNull()
 
-internal fun tryPositiveInteger64(s: String): ULong? = s.toULongOrNull()
+public fun tryPositiveInteger64(s: String): ULong? = s.toULongOrNull()
 
-internal fun tryNegativeInteger64(s: String): Long? = s.toLongOrNull()
+public fun tryNegativeInteger64(s: String): Long? = s.toLongOrNull()
 
-internal fun tryFloat(s: String): Double? = s.toDoubleOrNull()
+public fun tryFloat(s: String): Double? = s.toDoubleOrNull()
 
-internal fun tryPositiveInteger64Bytes(s: ByteArray): ULong? = s.decodeToString().toULongOrNull()
+public fun tryPositiveInteger64Bytes(s: ByteArray): ULong? = s.decodeToString().toULongOrNull()
 
-internal fun tryNegativeInteger64Bytes(s: ByteArray): Long? = s.decodeToString().toLongOrNull()
+public fun tryNegativeInteger64Bytes(s: ByteArray): Long? = s.decodeToString().toLongOrNull()
 
-internal fun tryPositiveInteger128Bytes(s: ByteArray): ULong? = s.decodeToString().toULongOrNull()
+public fun tryPositiveInteger128Bytes(s: ByteArray): ULong? = s.decodeToString().toULongOrNull()
 
-internal fun tryNegativeInteger128Bytes(s: ByteArray): Long? = s.decodeToString().toLongOrNull()
+public fun tryNegativeInteger128Bytes(s: ByteArray): Long? = s.decodeToString().toLongOrNull()
 
-internal fun tryFloatBytes(s: ByteArray): Double? = s.decodeToString().toDoubleOrNull()
+public fun tryFloatBytes(s: ByteArray): Double? = s.decodeToString().toDoubleOrNull()
+
+@HiddenFromObjC
+public inline fun <reified T> de(fields: List<String>): Result<T> {
+    val record = StringRecord.from(fields)
+    return deserializeStringRecord(record)
+}
+
+@HiddenFromObjC
+public inline fun <reified T> deHeaders(
+    headers: List<String>,
+    fields: List<String>,
+): Result<T> {
+    val headRec = StringRecord.from(headers)
+    val record = StringRecord.from(fields)
+    return deserializeStringRecord(record, headRec)
+}
+
+public fun b(bytes: ByteArray): ByteArray = bytes

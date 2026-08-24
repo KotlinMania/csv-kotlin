@@ -201,7 +201,7 @@ public class Writer internal constructor(
             if (i > 0) {
                 buffer.add(delimiter)
             }
-            writeFieldBytes(record[i]!!)
+            writeFieldBytes(record[i]!!, isSingleField = (count == 1))
         }
         writeTerminator()
         fieldCountInCurrentRecord = 0
@@ -235,7 +235,7 @@ public class Writer internal constructor(
             if (i > 0) {
                 buffer.add(delimiter)
             }
-            writeFieldBytes(fields[i].toString().encodeToByteArray())
+            writeFieldBytes(fields[i].toString().encodeToByteArray(), isSingleField = (count == 1))
         }
         writeTerminator()
         fieldCountInCurrentRecord = 0
@@ -303,7 +303,7 @@ public class Writer internal constructor(
      * Serialize a 128-bit value without headers.
      */
     public fun serializeNoHeaders128(value: Long): Result<Unit> {
-        writeField(value.toString())
+        writeField(value.toString().encodeToByteArray())
         return endRecord()
     }
 
@@ -312,35 +312,40 @@ public class Writer internal constructor(
      */
     public fun serializeTuple(items: List<Any?>): Result<Unit> {
         for (item in items) {
-            writeField(item?.toString() ?: "")
+            writeField(item?.toString()?.encodeToByteArray() ?: byteArrayOf())
         }
         return endRecord()
     }
 
     public fun drop() {
-        flush()
+        buffer.clear()
     }
 
     public fun writeField(field: CharSequence): Result<Unit> =
-        writeByteField(field.toString().encodeToByteArray())
+        writeField(field.toString().encodeToByteArray())
 
-    public fun writeFieldImpl(field: ByteArray): Result<Unit> = writeByteField(field)
-
-    public fun writeDelimiter() {
-        buffer.add(delimiter)
-    }
-
-    public fun writeTerminatorIntoBuffer() {
-        writeTerminator()
-    }
-
-    public fun writeByteField(field: ByteArray): Result<Unit> {
-        if (fieldCountInCurrentRecord > 0) {
+    public fun writeField(bytes: ByteArray): Result<Unit> {
+        if (recordStarted && fieldCountInCurrentRecord > 0) {
             buffer.add(delimiter)
         }
-        writeFieldBytes(field)
+        writeFieldBytes(bytes)
         fieldCountInCurrentRecord++
         recordStarted = true
+        return Result.success(Unit)
+    }
+
+    public fun writeFieldImpl(bytes: ByteArray): Result<Unit> {
+        writeFieldBytes(bytes)
+        return Result.success(Unit)
+    }
+
+    public fun writeDelimiter(): Result<Unit> {
+        buffer.add(delimiter)
+        return Result.success(Unit)
+    }
+
+    public fun writeTerminatorIntoBuffer(): Result<Unit> {
+        writeTerminator()
         return Result.success(Unit)
     }
 
@@ -366,8 +371,8 @@ public class Writer internal constructor(
         return Result.success(Unit)
     }
 
-    private fun writeFieldBytes(field: ByteArray) {
-        val shouldQuote = shouldQuote(field)
+    private fun writeFieldBytes(field: ByteArray, isSingleField: Boolean = false) {
+        val shouldQuote = shouldQuote(field, isSingleField)
         if (shouldQuote) {
             buffer.add(quote)
             for (b in field) {
@@ -394,7 +399,7 @@ public class Writer internal constructor(
         }
     }
 
-    private fun shouldQuote(field: ByteArray): Boolean =
+    private fun shouldQuote(field: ByteArray, isSingleField: Boolean = false): Boolean =
         when (quoteStyle) {
             QuoteStyle.ALWAYS -> true
             QuoteStyle.NEVER -> false
@@ -403,14 +408,14 @@ public class Writer internal constructor(
                 if (str.toDoubleOrNull() == null && str.toLongOrNull() == null) {
                     true
                 } else {
-                    needsQuotes(field)
+                    needsQuotes(field, isSingleField)
                 }
             }
-            QuoteStyle.NECESSARY -> needsQuotes(field)
+            QuoteStyle.NECESSARY -> needsQuotes(field, isSingleField)
         }
 
-    private fun needsQuotes(field: ByteArray): Boolean {
-        if (field.isEmpty()) return false
+    private fun needsQuotes(field: ByteArray, isSingleField: Boolean = false): Boolean {
+        if (field.isEmpty()) return isSingleField
         if (comment != null && field.isNotEmpty() && field[0] == comment) return true
         for (b in field) {
             if (b == delimiter || b == quote || b == '\n'.code.toByte() || b == '\r'.code.toByte()) {

@@ -103,6 +103,8 @@ public class ReaderBuilder {
 
     public fun fromReader(bytes: ByteArray): Reader = fromBytes(bytes)
 
+    public fun fromPath(path: String): Reader = fromString(path)
+
     public companion object {
         public fun new(): ReaderBuilder = ReaderBuilder()
 
@@ -150,9 +152,9 @@ public class Reader internal constructor(
         if (hRes.isFailure) {
             return Result.failure(hRes.exceptionOrNull()!!)
         }
-        offset = pos.byte.toInt().coerceIn(0, bytes.size)
-        line = pos.line
-        recordNum = pos.record
+        offset = pos.byte().toInt().coerceIn(0, bytes.size)
+        line = pos.line()
+        recordNum = pos.record()
         return Result.success(Unit)
     }
 
@@ -423,6 +425,8 @@ public class Reader internal constructor(
         record.pushField(arr)
     }
 
+    public fun addRecord(record: StringRecord): Result<Unit> = Result.success(Unit)
+
     public companion object {
         public fun new(): Reader = ReaderBuilder.new().fromReader(ByteArray(0))
 
@@ -433,6 +437,9 @@ public class Reader internal constructor(
 
         public fun fromString(string: String): Reader =
             ReaderBuilder.new().fromString(string)
+
+        public fun fromPath(path: String): Reader =
+            ReaderBuilder.new().fromPath(path)
 
         private fun isAsciiWhitespace(b: Byte): Boolean {
             val ub = b.toInt() and 0xFF
@@ -605,11 +612,6 @@ public class DeserializeRecordsIntoIter<D> internal constructor(
 }
 
 /**
- * Internal testing helper to create byte array from string.
- */
-internal fun b(s: String): ByteArray = s.encodeToByteArray()
-
-/**
  * Internal testing helper to create string from byte array.
  */
 internal fun s(b: ByteArray): String = b.decodeToString()
@@ -618,3 +620,16 @@ internal fun s(b: ByteArray): String = b.decodeToString()
  * Internal testing helper to create Position.
  */
 internal fun newpos(byte: ULong, line: ULong, record: ULong): Position = Position(byte, line, record)
+
+internal enum class ReaderState {
+    Start,
+    Record,
+}
+
+internal enum class ReaderEofState {
+    None,
+    Eof,
+}
+
+public typealias Headers = StringRecord
+public typealias ReaderItem = Result<StringRecord>

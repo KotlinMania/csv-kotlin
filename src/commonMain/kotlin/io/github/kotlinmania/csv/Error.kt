@@ -28,9 +28,9 @@ public class CsvError(
             is ErrorKind.Utf8 -> {
                 val pos = kind.pos
                 if (pos == null) {
-                    "CSV parse error: field ${kind.err.field}: ${kind.err}"
+                    "CSV parse error: field ${kind.err.field()}: ${kind.err}"
                 } else {
-                    "CSV parse error: record ${pos.record} (line ${pos.line}, field: ${kind.err.field}, byte: ${pos.byte}): ${kind.err}"
+                    "CSV parse error: record ${pos.record()} (line ${pos.line()}, field: ${kind.err.field()}, byte: ${pos.byte()}): ${kind.err}"
                 }
             }
             is ErrorKind.UnequalLengths -> {
@@ -38,7 +38,7 @@ public class CsvError(
                 if (pos == null) {
                     "CSV error: found record with ${kind.len} fields, but the previous record has ${kind.expectedLen} fields"
                 } else {
-                    "CSV error: record ${pos.record} (line: ${pos.line}, byte: ${pos.byte}): found record with ${kind.len} fields, but the previous record has ${kind.expectedLen} fields"
+                    "CSV error: record ${pos.record()} (line: ${pos.line()}, byte: ${pos.byte()}): found record with ${kind.len} fields, but the previous record has ${kind.expectedLen} fields"
                 }
             }
             is ErrorKind.Seek -> "CSV error: cannot access headers of CSV data when the parser was seeked before the first record could be read"
@@ -48,7 +48,7 @@ public class CsvError(
                 if (pos == null) {
                     "CSV deserialize error: ${kind.message}"
                 } else {
-                    "CSV deserialize error: record ${pos.record} (line: ${pos.line}, byte: ${pos.byte}): ${kind.message}"
+                    "CSV deserialize error: record ${pos.record()} (line: ${pos.line()}, byte: ${pos.byte()}): ${kind.message}"
                 }
             }
         }
@@ -130,14 +130,30 @@ public class FromUtf8Error(
 /**
  * A UTF-8 validation error.
  */
-public data class Utf8Error(
-    val field: Int,
-    val validUpTo: Int,
+public class Utf8Error(
+    private val fieldVal: Int,
+    private val validUpToVal: Int,
 ) {
+    public fun field(): Int = fieldVal
+
+    public fun validUpTo(): Int = validUpToVal
+
     public fun fmt(): String = toString()
 
     override fun toString(): String =
-        "invalid utf-8: invalid UTF-8 in field $field near byte index $validUpTo"
+        "invalid utf-8: invalid UTF-8 in field $fieldVal near byte index $validUpToVal"
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Utf8Error) return false
+        return fieldVal == other.fieldVal && validUpToVal == other.validUpToVal
+    }
+
+    override fun hashCode(): Int {
+        var result = fieldVal
+        result = 31 * result + validUpToVal
+        return result
+    }
 }
 
 public fun newUtf8Error(field: Int, validUpTo: Int): Utf8Error = Utf8Error(field, validUpTo)

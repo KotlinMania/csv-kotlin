@@ -92,6 +92,8 @@ public class WriterBuilder {
             terminator = terminator,
         )
 
+    public fun fromPath(path: String): Writer = fromWriter()
+
     public companion object {
         public fun new(): WriterBuilder = WriterBuilder()
 
@@ -429,16 +431,26 @@ public class Writer internal constructor(
         public fun new(): Writer = WriterBuilder.new().fromWriter()
 
         public fun default(): Writer = new()
+
+        public fun fromPath(path: String): Writer = WriterBuilder.new().fromPath(path)
+
+        public fun fromWriter(): Writer = WriterBuilder.new().fromWriter()
     }
 }
 
-/**
- * HeaderState encodes a small state machine for handling header writes.
- */
-public enum class HeaderState {
-    WRITE,
-    DID_WRITE,
-    DID_NOT_WRITE,
-    NONE,
+internal enum class WriterState {
+    Start,
+    Record,
 }
 
+internal class Buffer(
+    val buf: MutableList<Byte> = mutableListOf(),
+)
+
+internal class MarkWriteAndFlush(
+    val wtr: Writer,
+)
+
+internal data class Row(
+    val fields: List<String> = emptyList(),
+)

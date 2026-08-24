@@ -228,8 +228,8 @@ class ReaderTest {
         assertIs<CsvError>(err)
         val kind = err.kind()
         assertIs<ErrorKind.Utf8>(kind)
-        assertEquals(1, kind.err.field)
-        assertEquals(1, kind.err.validUpTo)
+        assertEquals(1, kind.err.field())
+        assertEquals(1, kind.err.validUpTo())
     }
 
     @Test
@@ -311,16 +311,16 @@ class ReaderTest {
         val rec = StringRecord.new()
 
         assertTrue(rdr.readRecord(rec).getOrThrow())
-        assertEquals(0uL, rec.position()?.record)
-        assertEquals(1uL, rec.position()?.line)
+        assertEquals(0uL, rec.position()?.record())
+        assertEquals(1uL, rec.position()?.line())
 
         assertTrue(rdr.readRecord(rec).getOrThrow())
-        assertEquals(1uL, rec.position()?.record)
-        assertEquals(2uL, rec.position()?.line)
+        assertEquals(1uL, rec.position()?.record())
+        assertEquals(2uL, rec.position()?.line())
 
         assertTrue(rdr.readRecord(rec).getOrThrow())
-        assertEquals(2uL, rec.position()?.record)
-        assertEquals(3uL, rec.position()?.line)
+        assertEquals(2uL, rec.position()?.record())
+        assertEquals(3uL, rec.position()?.line())
     }
 
     @Test
@@ -330,12 +330,12 @@ class ReaderTest {
         val rec = StringRecord.new()
 
         val headers = rdr.headers().getOrThrow()
-        assertEquals(0uL, headers.position()?.record)
-        assertEquals(1uL, headers.position()?.line)
+        assertEquals(0uL, headers.position()?.record())
+        assertEquals(1uL, headers.position()?.line())
 
         assertTrue(rdr.readRecord(rec).getOrThrow())
-        assertEquals(1uL, rec.position()?.record)
-        assertEquals(2uL, rec.position()?.line)
+        assertEquals(1uL, rec.position()?.record())
+        assertEquals(2uL, rec.position()?.line())
     }
 
     @Test

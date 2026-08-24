@@ -73,10 +73,32 @@ class DeserializerTest {
     }
 
     @Test
-    fun deserializeEnum() {
-        val record = StringRecord.from(listOf("Widget", "GREEN"))
-        val item = record.deserialize<Item>().getOrThrow()
-        assertEquals("Widget", item.label)
-        assertEquals(Color.GREEN, item.color)
+    fun testWithHeader() {
+        val headers = StringRecord.from(listOf("x", "y", "z"))
+        val record = StringRecord.from(listOf("hi", "42", "1.3"))
+        val de = DeStringRecord(record, headers)
+        assertTrue(de.hasHeaders())
+        assertEquals("x", de.nextHeader())
+        assertEquals("hi", de.nextField().getOrThrow())
+    }
+
+    @Test
+    fun testDeByteRecord() {
+        val headers = ByteRecord.fromStrings(listOf("x", "y", "z"))
+        val record = ByteRecord.fromStrings(listOf("hi", "42", "1.3"))
+        val de = DeByteRecord(record, headers)
+        assertTrue(de.hasHeaders())
+        assertEquals("x", de.nextHeader())
+        assertEquals("hi", de.nextField().getOrThrow())
+    }
+
+    @Test
+    fun testTryNumericHelpers() {
+        assertEquals(123UL, tryPositiveInteger64("123"))
+        assertEquals(-123L, tryNegativeInteger64("-123"))
+        assertEquals(1.23, tryFloat("1.23"))
+        assertEquals(123UL, tryPositiveInteger64Bytes("123".encodeToByteArray()))
+        assertEquals(-123L, tryNegativeInteger64Bytes("-123".encodeToByteArray()))
+        assertEquals(1.23, tryFloatBytes("1.23".encodeToByteArray()))
     }
 }

@@ -4,10 +4,10 @@ Based on AST analysis, here are the concrete next steps.
 
 ## Summary
 
-- **Files Present:** 11/49 (22.4%)
-- **Function parity:** 311/561 matched (target 579) — 55.4%
-- **Class/type parity:** 51/97 matched (target 100) — 52.6%
-- **Combined symbol parity:** 362/658 matched (target 679) — 55.0%
+- **Files Present:** 11/11 (100.0%)
+- **Function parity:** 311/426 matched (target 579) — 73.0%
+- **Class/type parity:** 51/74 matched (target 100) — 68.9%
+- **Combined symbol parity:** 362/500 matched (target 679) — 72.4%
 - **Average inline-code cosine:** 0.45 (function body across 9 matched files)
 - **Average documentation cosine:** 0.48 (doc text across 9 matched files)
 - **Cheat-zeroed Files:** 0
@@ -27,26 +27,9 @@ No missing high-value files detected.
 
 Every matched file is listed below with function and type symbol parity.
 
-### 1. reader
+### 1. string_record
 
-- **Target:** `csv.Reader [PROVENANCE-FALLBACK]`
-- **Similarity:** 0.61
-- **Dependents:** 1
-- **Priority Score:** 1047803.9
-- **Functions:** 63/66 matched (target 117)
-- **Missing functions:** `b`, `s`, `newpos`
-- **Types:** 11/12 matched (target 13)
-- **Missing types:** `Item`
-- **Tests:** 20/23 matched
-- **Provenance warning:** port-lint provenance header matched only after fallback normalization: `reader.rs` vs expected `reader.rs`
-- **Provenance warning:** port-lint provenance header matched only after fallback normalization: `tests:reader.rs` vs expected `reader.rs`
-- **Proposed provenance header:** `// port-lint: source reader.rs` (current: `// port-lint: source reader.rs`)
-- **Proposed provenance header:** `// port-lint: tests reader.rs` (current: `// port-lint: tests reader.rs`)
-- **Lint issues:** 2
-
-### 2. string_record
-
-- **Target:** `csv.StringRecord [PROVENANCE-FALLBACK]`
+- **Target:** `csv.StringRecord`
 - **Similarity:** 0.55
 - **Dependents:** 1
 - **Priority Score:** 1034704.5
@@ -55,15 +38,10 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 2/5 matched (target 6)
 - **Missing types:** `Output`, `IntoIter`, `Item`
 - **Tests:** 9/9 matched
-- **Provenance warning:** port-lint provenance header matched only after fallback normalization: `string_record.rs` vs expected `string_record.rs`
-- **Provenance warning:** port-lint provenance header matched only after fallback normalization: `tests:string_record.rs` vs expected `string_record.rs`
-- **Proposed provenance header:** `// port-lint: source string_record.rs` (current: `// port-lint: source string_record.rs`)
-- **Proposed provenance header:** `// port-lint: tests string_record.rs` (current: `// port-lint: tests string_record.rs`)
-- **Lint issues:** 2
 
-### 3. deserializer
+### 2. deserializer
 
-- **Target:** `csv.Deserializer [PROVENANCE-FALLBACK]`
+- **Target:** `csv.Deserializer`
 - **Similarity:** 0.15
 - **Dependents:** 0
 - **Priority Score:** 800808.5
@@ -72,15 +50,10 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 7/15 matched (target 20)
 - **Missing types:** `Error`, `Variant`, `Foo`, `Bar`, `Label`, `Boolish`, `Input`, `Properties`
 - **Tests:** 0/39 matched
-- **Provenance warning:** port-lint provenance header matched only after fallback normalization: `deserializer.rs` vs expected `deserializer.rs`
-- **Provenance warning:** port-lint provenance header matched only after fallback normalization: `tests:deserializer.rs` vs expected `deserializer.rs`
-- **Proposed provenance header:** `// port-lint: source deserializer.rs` (current: `// port-lint: source deserializer.rs`)
-- **Proposed provenance header:** `// port-lint: tests deserializer.rs` (current: `// port-lint: tests deserializer.rs`)
-- **Lint issues:** 2
 
-### 4. serializer
+### 3. serializer
 
-- **Target:** `csv.Serializer [PROVENANCE-FALLBACK]`
+- **Target:** `csv.Serializer`
 - **Similarity:** 0.44
 - **Dependents:** 0
 - **Priority Score:** 409305.6
@@ -89,15 +62,11 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 10/17 matched (target 21)
 - **Missing types:** `Ok`, `Error`, `Foo`, `Wat`, `Nested`, `Bar`, `Baz`
 - **Tests:** 0/32 matched
-- **Provenance warning:** port-lint provenance header matched only after fallback normalization: `serializer.rs` vs expected `serializer.rs`
-- **Provenance warning:** port-lint provenance header matched only after fallback normalization: `tests:serializer.rs` vs expected `serializer.rs`
-- **Proposed provenance header:** `// port-lint: source serializer.rs` (current: `// port-lint: source serializer.rs`)
-- **Proposed provenance header:** `// port-lint: tests serializer.rs` (current: `// port-lint: tests serializer.rs`)
-- **Lint issues:** 4
+- **Lint issues:** 2
 
-### 5. writer
+### 4. writer
 
-- **Target:** `csv.Writer [PROVENANCE-FALLBACK]`
+- **Target:** `csv.Writer`
 - **Similarity:** 0.54
 - **Dependents:** 0
 - **Priority Score:** 86004.6
@@ -106,15 +75,10 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 6/7 matched
 - **Missing types:** `HeaderState`
 - **Tests:** 14/21 matched
-- **Provenance warning:** port-lint provenance header matched only after fallback normalization: `writer.rs` vs expected `writer.rs`
-- **Provenance warning:** port-lint provenance header matched only after fallback normalization: `tests:writer.rs` vs expected `writer.rs`
-- **Proposed provenance header:** `// port-lint: source writer.rs` (current: `// port-lint: source writer.rs`)
-- **Proposed provenance header:** `// port-lint: tests writer.rs` (current: `// port-lint: tests writer.rs`)
-- **Lint issues:** 2
 
-### 6. byte_record
+### 5. byte_record
 
-- **Target:** `csv.ByteRecord [PROVENANCE-FALLBACK]`
+- **Target:** `csv.ByteRecord`
 - **Similarity:** 0.52
 - **Dependents:** 0
 - **Priority Score:** 48104.8
@@ -123,15 +87,22 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 5/8 matched (target 9)
 - **Missing types:** `Output`, `IntoIter`, `Item`
 - **Tests:** 25/26 matched
-- **Provenance warning:** port-lint provenance header matched only after fallback normalization: `byte_record.rs` vs expected `byte_record.rs`
-- **Provenance warning:** port-lint provenance header matched only after fallback normalization: `tests:byte_record.rs` vs expected `byte_record.rs`
-- **Proposed provenance header:** `// port-lint: source byte_record.rs` (current: `// port-lint: source byte_record.rs`)
-- **Proposed provenance header:** `// port-lint: tests byte_record.rs` (current: `// port-lint: tests byte_record.rs`)
-- **Lint issues:** 2
+
+### 6. reader
+
+- **Target:** `csv.Reader`
+- **Similarity:** 0.61
+- **Dependents:** 0
+- **Priority Score:** 47803.9
+- **Functions:** 63/66 matched (target 117)
+- **Missing functions:** `b`, `s`, `newpos`
+- **Types:** 11/12 matched (target 13)
+- **Missing types:** `Item`
+- **Tests:** 20/23 matched
 
 ### 7. error
 
-- **Target:** `csv.Error [PROVENANCE-FALLBACK]`
+- **Target:** `csv.Error`
 - **Similarity:** 0.45
 - **Dependents:** 0
 - **Priority Score:** 2205.5
@@ -139,13 +110,10 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing functions:** _none_
 - **Types:** 6/6 matched (target 13)
 - **Missing types:** _none_
-- **Provenance warning:** port-lint provenance header matched only after fallback normalization: `error.rs` vs expected `error.rs`
-- **Proposed provenance header:** `// port-lint: source error.rs` (current: `// port-lint: source error.rs`)
-- **Lint issues:** 1
 
 ### 8. lib
 
-- **Target:** `csv.Lib [PROVENANCE-FALLBACK]`
+- **Target:** `csv.Lib`
 - **Similarity:** 0.34
 - **Dependents:** 0
 - **Priority Score:** 706.6
@@ -153,15 +121,10 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing functions:** _none_
 - **Types:** 3/3 matched (target 5)
 - **Missing types:** _none_
-- **Provenance warning:** port-lint provenance header matched only after fallback normalization: `lib.rs` vs expected `lib.rs`
-- **Provenance warning:** port-lint provenance header matched only after fallback normalization: `lib.rs` vs expected `lib.rs`
-- **Proposed provenance header:** `// port-lint: source lib.rs` (current: `// port-lint: source lib.rs`)
-- **Proposed provenance header:** `// port-lint: source lib.rs` (current: `// port-lint: source lib.rs`)
-- **Lint issues:** 2
 
 ### 9. debug
 
-- **Target:** `csv.Debug [PROVENANCE-FALLBACK]`
+- **Target:** `csv.Debug`
 - **Similarity:** 0.45
 - **Dependents:** 0
 - **Priority Score:** 405.5
@@ -169,13 +132,10 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing functions:** _none_
 - **Types:** 1/1 matched (target 4)
 - **Missing types:** _none_
-- **Provenance warning:** port-lint provenance header matched only after fallback normalization: `debug.rs` vs expected `debug.rs`
-- **Proposed provenance header:** `// port-lint: source debug.rs` (current: `// port-lint: source debug.rs`)
-- **Lint issues:** 1
 
 ### 10. cookbook
 
-- **Target:** `csv.Cookbook [STUB] [PROVENANCE-FALLBACK]`
+- **Target:** `csv.Cookbook [STUB]`
 - **Similarity:** 1.00
 - **Dependents:** 0
 - **Priority Score:** 0.0
@@ -183,13 +143,10 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing functions:** _none_
 - **Types:** 0/0 matched (target 1)
 - **Missing types:** _none_
-- **Provenance warning:** port-lint provenance header matched only after fallback normalization: `cookbook.rs` vs expected `cookbook.rs`
-- **Proposed provenance header:** `// port-lint: source cookbook.rs` (current: `// port-lint: source cookbook.rs`)
-- **Lint issues:** 1
 
 ### 11. tutorial
 
-- **Target:** `csv.Tutorial [STUB] [PROVENANCE-FALLBACK]`
+- **Target:** `csv.Tutorial [STUB]`
 - **Similarity:** 1.00
 - **Dependents:** 0
 - **Priority Score:** 0.0
@@ -197,9 +154,6 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing functions:** _none_
 - **Types:** 0/0 matched (target 1)
 - **Missing types:** _none_
-- **Provenance warning:** port-lint provenance header matched only after fallback normalization: `tutorial.rs` vs expected `tutorial.rs`
-- **Proposed provenance header:** `// port-lint: source tutorial.rs` (current: `// port-lint: source tutorial.rs`)
-- **Lint issues:** 1
 
 ## Success Criteria
 

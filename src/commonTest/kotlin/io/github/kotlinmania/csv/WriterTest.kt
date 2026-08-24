@@ -37,31 +37,31 @@ class WriterTest {
     @Test
     fun oneEmptyRecord() {
         val wtr = WriterBuilder.new().fromWriter()
-        wtr.writeRecord(emptyList<String>())
-        assertEquals("\n", wtr.asString())
+        wtr.writeRecord(listOf("")).getOrThrow()
+        assertEquals("\"\"\n", wtr.asString())
     }
 
     @Test
     fun rawOneEmptyRecord() {
         val wtr = WriterBuilder.new().fromWriter()
-        wtr.writeByteRecord(ByteRecord.new())
-        assertEquals("\n", wtr.asString())
+        wtr.writeByteRecord(ByteRecord.fromStrings(listOf(""))).getOrThrow()
+        assertEquals("\"\"\n", wtr.asString())
     }
 
     @Test
     fun twoEmptyRecords() {
         val wtr = WriterBuilder.new().fromWriter()
-        wtr.writeRecord(emptyList<String>())
-        wtr.writeRecord(emptyList<String>())
-        assertEquals("\n\n", wtr.asString())
+        wtr.writeRecord(listOf("")).getOrThrow()
+        wtr.writeRecord(listOf("")).getOrThrow()
+        assertEquals("\"\"\n\"\"\n", wtr.asString())
     }
 
     @Test
     fun rawTwoEmptyRecords() {
         val wtr = WriterBuilder.new().fromWriter()
-        wtr.writeByteRecord(ByteRecord.new())
-        wtr.writeByteRecord(ByteRecord.new())
-        assertEquals("\n\n", wtr.asString())
+        wtr.writeByteRecord(ByteRecord.fromStrings(listOf(""))).getOrThrow()
+        wtr.writeByteRecord(ByteRecord.fromStrings(listOf(""))).getOrThrow()
+        assertEquals("\"\"\n\"\"\n", wtr.asString())
     }
 
     @Test
@@ -142,6 +142,7 @@ class WriterTest {
     fun writerFieldImplAndDelimiters() {
         val wtr = Writer.new()
         wtr.writeFieldImpl("first".encodeToByteArray())
+        wtr.writeDelimiter()
         wtr.writeFieldImpl("second".encodeToByteArray())
         wtr.writeTerminatorIntoBuffer()
         assertEquals("first,second\n", wtr.asString())
@@ -152,5 +153,47 @@ class WriterTest {
         wtr.clear()
         wtr.writeDelimiter()
         assertEquals(",", wtr.asString())
+    }
+
+    @kotlinx.serialization.Serializable
+    private data class Row(
+        val foo: Int,
+        val bar: Double,
+        val baz: Boolean,
+    )
+
+    @kotlinx.serialization.Serializable
+    private data class Row128(
+        val foo: Long,
+        val bar: Double,
+        val baz: Boolean,
+    )
+
+    @Test
+    fun serializeWithHeaders() {
+        val wtr = WriterBuilder.new().fromWriter()
+        wtr.serialize(Row(42, 42.5, true)).getOrThrow()
+        assertEquals("foo,bar,baz\n42,42.5,true\n", wtr.asString())
+    }
+
+    @Test
+    fun serializeNoHeaders() {
+        val wtr = WriterBuilder.new().hasHeaders(false).fromWriter()
+        wtr.serialize(Row(42, 42.5, true)).getOrThrow()
+        assertEquals("42,42.5,true\n", wtr.asString())
+    }
+
+    @Test
+    fun serializeNoHeaders128() {
+        val wtr = WriterBuilder.new().hasHeaders(false).fromWriter()
+        wtr.serialize(Row128(9223372036854775807L, 42.5, true)).getOrThrow()
+        assertEquals("9223372036854775807,42.5,true\n", wtr.asString())
+    }
+
+    @Test
+    fun serializeTuple() {
+        val wtr = WriterBuilder.new().fromWriter()
+        wtr.serializeTuple(listOf(true, 1.3, "hi")).getOrThrow()
+        assertEquals("true,1.3,hi\n", wtr.asString())
     }
 }

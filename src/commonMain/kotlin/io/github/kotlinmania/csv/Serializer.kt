@@ -10,6 +10,23 @@ import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
 
 /**
+ * Serialize the given value to the given writer using the provided [SerializationStrategy].
+ */
+public fun <T> serialize(
+    writer: Writer,
+    serializer: SerializationStrategy<T>,
+    value: T,
+): Result<Unit> = CsvSerializer.serialize(writer, serializer, value)
+
+/**
+ * Serialize the given value to the given writer using the default serializer.
+ */
+public inline fun <reified T> serialize(
+    writer: Writer,
+    value: T,
+): Result<Unit> = CsvSerializer.serialize(writer, kotlinx.serialization.serializer(), value)
+
+/**
  * Serializes values into CSV records using kotlinx.serialization.
  */
 public object CsvSerializer {

@@ -10,6 +10,40 @@ import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
 
 /**
+ * Deserializes a [StringRecord] into [T] using the given [DeserializationStrategy].
+ */
+public fun <T> deserializeStringRecord(
+    record: StringRecord,
+    deserializer: DeserializationStrategy<T>,
+    headers: StringRecord? = null,
+): Result<T> = CsvDeserializer.deserialize(record, deserializer, headers)
+
+/**
+ * Deserializes a [StringRecord] into [T] using the default serializer.
+ */
+public inline fun <reified T> deserializeStringRecord(
+    record: StringRecord,
+    headers: StringRecord? = null,
+): Result<T> = CsvDeserializer.deserialize(record, kotlinx.serialization.serializer(), headers)
+
+/**
+ * Deserializes a [ByteRecord] into [T] using the given [DeserializationStrategy].
+ */
+public fun <T> deserializeByteRecord(
+    record: ByteRecord,
+    deserializer: DeserializationStrategy<T>,
+    headers: ByteRecord? = null,
+): Result<T> = CsvDeserializer.deserialize(record, deserializer, headers)
+
+/**
+ * Deserializes a [ByteRecord] into [T] using the default serializer.
+ */
+public inline fun <reified T> deserializeByteRecord(
+    record: ByteRecord,
+    headers: ByteRecord? = null,
+): Result<T> = CsvDeserializer.deserialize(record, kotlinx.serialization.serializer(), headers)
+
+/**
  * Deserializes values from CSV records using kotlinx.serialization.
  */
 public object CsvDeserializer {

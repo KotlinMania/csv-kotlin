@@ -1,6 +1,7 @@
 // port-lint: source error.rs
 package io.github.kotlinmania.csv
 
+public typealias Result<T> = kotlin.Result<T>
 public typealias Error = CsvError
 
 /**

@@ -9,7 +9,7 @@ Based on AST analysis, here are the concrete next steps.
 - **Class/type parity:** 30/74 matched (target 61) — 40.5%
 - **Combined symbol parity:** 278/500 matched (target 496) — 55.6%
 - **Average inline-code cosine:** 0.32 (function body across 11 matched files)
-- **Average documentation cosine:** 0.33 (doc text across 11 matched files)
+- **Average documentation cosine:** 0.35 (doc text across 11 matched files)
 - **Cheat-zeroed Files:** 2
 - **Critical Issues:** 11 files with <0.60 function similarity
 
@@ -90,7 +90,7 @@ Every matched file is listed below with function and type symbol parity.
 
 ### 6. byte_record
 
-- **Target:** `csv.Position`
+- **Target:** `csv.ByteRecord`
 - **Similarity:** 0.55
 - **Dependents:** 0
 - **Priority Score:** 48104.5

@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 11/11 (100.0%)
-- **Function parity:** 311/426 matched (target 583) — 73.0%
+- **Function parity:** 311/426 matched (target 579) — 73.0%
 - **Class/type parity:** 51/74 matched (target 100) — 68.9%
-- **Combined symbol parity:** 362/500 matched (target 683) — 72.4%
+- **Combined symbol parity:** 362/500 matched (target 679) — 72.4%
 - **Average inline-code cosine:** 0.45 (function body across 9 matched files)
 - **Average documentation cosine:** 0.48 (doc text across 9 matched files)
 - **Cheat-zeroed Files:** 0
@@ -44,8 +44,8 @@ Every matched file is listed below with function and type symbol parity.
 - **Target:** `csv.Deserializer`
 - **Similarity:** 0.15
 - **Dependents:** 0
-- **Priority Score:** 800808.4
-- **Functions:** 22/93 matched (target 62)
+- **Priority Score:** 800808.5
+- **Functions:** 22/93 matched (target 65)
 - **Missing functions:** `infer_deserialize`, `deserialize_any`, `deserialize_bool`, `deserialize_f32`, `deserialize_f64`, `deserialize_char`, `deserialize_str`, `deserialize_string`, `deserialize_bytes`, `deserialize_byte_buf`, `deserialize_option`, `deserialize_unit`, `deserialize_unit_struct`, `deserialize_newtype_struct`, `deserialize_seq`, `deserialize_tuple`, `deserialize_tuple_struct`, `deserialize_map`, `deserialize_struct`, `deserialize_identifier`, `deserialize_enum`, `deserialize_ignored_any`, `variant_seed`, `unit_variant`, `newtype_variant_seed`, `tuple_variant`, `struct_variant`, `next_element_seed`, `next_key_seed`, `next_value_seed`, `custom`, `fmt`, `de`, `de_headers`, `b`, `with_header`, `with_header_unknown`, `with_header_missing`, `with_header_missing_ok`, `with_header_no_fields`, `with_header_empty`, `with_header_empty_ok`, `without_header`, `no_fields`, `one_field`, `one_field_128`, `two_fields`, `two_fields_too_many`, `two_fields_too_few`, `one_char`, `no_chars`, `too_many_chars`, `simple_seq`, `simple_hex_seq`, `mixed_hex_seq`, `bad_hex_seq`, `seq_in_struct`, `seq_in_struct_tail`, `map_headers`, `map_no_headers`, `bytes`, `adjacent_fixed_arrays`, `enum_label_simple_tagged`, `enum_untagged`, `option_empty_field`, `option_invalid_field`, `borrowed`, `borrowed_map`, `borrowed_map_bytes`, `flatten`, `partially_invalid_utf8`
 - **Types:** 7/15 matched (target 20)
 - **Missing types:** `Error`, `Variant`, `Foo`, `Bar`, `Label`, `Boolish`, `Input`, `Properties`
@@ -67,10 +67,10 @@ Every matched file is listed below with function and type symbol parity.
 ### 4. writer
 
 - **Target:** `csv.Writer`
-- **Similarity:** 0.55
+- **Similarity:** 0.54
 - **Dependents:** 0
-- **Priority Score:** 86004.5
-- **Functions:** 46/53 matched (target 82)
+- **Priority Score:** 86004.6
+- **Functions:** 46/53 matched (target 75)
 - **Missing functions:** `wtr_as_string`, `into_string`, `write`, `serialize_with_headers`, `serialize_no_headers`, `serialize_no_headers_128`, `serialize_tuple`
 - **Types:** 6/7 matched
 - **Missing types:** `HeaderState`
@@ -82,7 +82,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Similarity:** 0.52
 - **Dependents:** 0
 - **Priority Score:** 48104.8
-- **Functions:** 72/73 matched (target 99)
+- **Functions:** 72/73 matched (target 100)
 - **Missing functions:** `b`
 - **Types:** 5/8 matched (target 9)
 - **Missing types:** `Output`, `IntoIter`, `Item`
@@ -94,7 +94,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Similarity:** 0.61
 - **Dependents:** 0
 - **Priority Score:** 47803.9
-- **Functions:** 63/66 matched (target 118)
+- **Functions:** 63/66 matched (target 117)
 - **Missing functions:** `b`, `s`, `newpos`
 - **Types:** 11/12 matched (target 13)
 - **Missing types:** `Item`

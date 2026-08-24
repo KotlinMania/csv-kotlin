@@ -499,6 +499,22 @@ public class ByteRecordIter internal constructor(
     public fun sizeHint(): Pair<Int, Int?> = count() to count()
 }
 
+/**
+ * The inner portion of a byte record.
+ */
+internal data class ByteRecordInner(
+    var pos: Position? = null,
+    val fields: MutableList<Byte> = mutableListOf(),
+    val bounds: Bounds = Bounds(),
+)
+
+/**
+ * The bounds of fields in a single record.
+ */
+internal data class Bounds(
+    val ends: MutableList<Int> = mutableListOf(),
+    var len: Int = 0,
+)
 
 /**
  * A position in CSV data.
@@ -510,16 +526,31 @@ public class ByteRecordIter internal constructor(
  *
  * A CSV reader will automatically assign the position of each record.
  */
-public data class Position(
-    var byte: ULong = 0uL,
-    var line: ULong = 1uL,
-    var record: ULong = 0uL,
+public class Position(
+    private var byteVal: ULong = 0uL,
+    private var lineVal: ULong = 1uL,
+    private var recordVal: ULong = 0uL,
 ) {
+    /**
+     * The byte offset, starting at `0`, of this position.
+     */
+    public fun byte(): ULong = byteVal
+
+    /**
+     * The line number, starting at `1`, of this position.
+     */
+    public fun line(): ULong = lineVal
+
+    /**
+     * The record index, starting with the first record at `0`.
+     */
+    public fun record(): ULong = recordVal
+
     /**
      * Set the byte offset of this position.
      */
     public fun setByte(byte: ULong): Position {
-        this.byte = byte
+        this.byteVal = byte
         return this
     }
 
@@ -530,7 +561,7 @@ public data class Position(
      */
     public fun setLine(line: ULong): Position {
         require(line > 0uL) { "line number must be > 0" }
-        this.line = line
+        this.lineVal = line
         return this
     }
 
@@ -538,13 +569,37 @@ public data class Position(
      * Set the record index of this position.
      */
     public fun setRecord(record: ULong): Position {
-        this.record = record
+        this.recordVal = record
         return this
     }
+
+    public fun clone(): Position = Position(byteVal, lineVal, recordVal)
+
+    public fun copy(byte: ULong = byteVal, line: ULong = lineVal, record: ULong = recordVal): Position =
+        Position(byte, line, record)
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Position) return false
+        return byteVal == other.byteVal && lineVal == other.lineVal && recordVal == other.recordVal
+    }
+
+    override fun hashCode(): Int {
+        var result = byteVal.hashCode()
+        result = 31 * result + lineVal.hashCode()
+        result = 31 * result + recordVal.hashCode()
+        return result
+    }
+
+    override fun toString(): String = "Position(byte=$byteVal, line=$lineVal, record=$recordVal)"
 
     public companion object {
         public fun new(): Position = Position(0uL, 1uL, 0uL)
     }
 }
 
+internal fun b(s: String): ByteArray = s.encodeToByteArray()
 
+public typealias ByteRecordOutput = ByteRecord
+public typealias ByteRecordIntoIter = Iterator<ByteArray>
+public typealias ByteRecordItem = ByteArray

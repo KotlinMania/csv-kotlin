@@ -3,7 +3,6 @@
 
 package io.github.kotlinmania.csv
 
-import kotlin.native.HiddenFromObjC
 import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.StructureKind
@@ -11,6 +10,7 @@ import kotlinx.serialization.encoding.AbstractEncoder
 import kotlinx.serialization.encoding.CompositeEncoder
 import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
+import kotlin.native.HiddenFromObjC
 
 /**
  * Serialize the given value to the given writer using the provided [SerializationStrategy].
@@ -30,6 +30,34 @@ public inline fun <reified T> serialize(
     writer: Writer,
     value: T,
 ): Result<Unit> = CsvSerializer.serialize(writer, kotlinx.serialization.serializer(), value)
+
+/**
+ * Write header names corresponding to the field names of the value (if the value has field names).
+ */
+@HiddenFromObjC
+public fun <T> serializeHeader(
+    writer: Writer,
+    serializer: SerializationStrategy<T>,
+    value: T,
+): Result<Boolean> {
+    val ser = SeHeader(writer)
+    return try {
+        val encoder = CsvRecordEncoder(writer)
+        serializer.serialize(encoder, value)
+        Result.success(ser.wroteHeader())
+    } catch (e: Exception) {
+        Result.failure(if (e is CsvError) e else CsvError(ErrorKind.Serialize(e.message ?: "Header serialization failed")))
+    }
+}
+
+/**
+ * Write header names corresponding to the field names of the value (if the value has field names).
+ */
+@HiddenFromObjC
+public inline fun <reified T> serializeHeader(
+    writer: Writer,
+    value: T,
+): Result<Boolean> = serializeHeader(writer, kotlinx.serialization.serializer(), value)
 
 /**
  * Serializes values into CSV records using kotlinx.serialization.
@@ -82,6 +110,300 @@ public object CsvSerializer {
             Result.failure(if (e is CsvError) e else CsvError(ErrorKind.Serialize(e.message ?: "Header serialization failed")))
         }
     }
+}
+
+/**
+ * Internal record serializer matching Serde SeRecord.
+ */
+internal class SeRecord(
+    public val wtr: Writer,
+) : SerializeSeq,
+    SerializeTuple,
+    SerializeTupleStruct,
+    SerializeTupleVariant,
+    SerializeMap,
+    SerializeStruct,
+    SerializeStructVariant {
+    public fun serializeBool(v: Boolean): Result<Unit> =
+        wtr.writeField(if (v) "true" else "false")
+
+    public fun serializeI8(v: Byte): Result<Unit> = wtr.writeField(v.toString())
+
+    public fun serializeI16(v: Short): Result<Unit> = wtr.writeField(v.toString())
+
+    public fun serializeI32(v: Int): Result<Unit> = wtr.writeField(v.toString())
+
+    public fun serializeI64(v: Long): Result<Unit> = wtr.writeField(v.toString())
+
+    public fun serializeI128(v: String): Result<Unit> = wtr.writeField(v)
+
+    public fun serializeU8(v: UByte): Result<Unit> = wtr.writeField(v.toString())
+
+    public fun serializeU16(v: UShort): Result<Unit> = wtr.writeField(v.toString())
+
+    public fun serializeU32(v: UInt): Result<Unit> = wtr.writeField(v.toString())
+
+    public fun serializeU64(v: ULong): Result<Unit> = wtr.writeField(v.toString())
+
+    public fun serializeU128(v: String): Result<Unit> = wtr.writeField(v)
+
+    public fun serializeF32(v: Float): Result<Unit> = wtr.writeField(v.toString())
+
+    public fun serializeF64(v: Double): Result<Unit> = wtr.writeField(v.toString())
+
+    public fun serializeChar(v: Char): Result<Unit> = wtr.writeField(v.toString())
+
+    public fun serializeStr(value: String): Result<Unit> = wtr.writeField(value)
+
+    public fun serializeBytes(value: ByteArray): Result<Unit> = wtr.writeByteField(value)
+
+    public fun serializeNone(): Result<Unit> = wtr.writeField("")
+
+    public fun serializeSome(value: String): Result<Unit> = wtr.writeField(value)
+
+    public fun serializeUnit(): Result<Unit> = wtr.writeField("")
+
+    public fun serializeUnitStruct(name: String): Result<Unit> = wtr.writeField(name)
+
+    public fun serializeUnitVariant(name: String, variantIndex: UInt, variant: String): Result<Unit> =
+        wtr.writeField(variant)
+
+    public fun serializeNewtypeStruct(name: String, value: String): Result<Unit> = wtr.writeField(value)
+
+    public fun serializeNewtypeVariant(name: String, variantIndex: UInt, variant: String, value: String): Result<Unit> =
+        wtr.writeField(value)
+
+    public fun serializeSeq(len: Int?): Result<SerializeSeq> = Result.success(this)
+
+    public fun serializeTuple(len: Int): Result<SerializeTuple> = Result.success(this)
+
+    public fun serializeTupleStruct(name: String, len: Int): Result<SerializeTupleStruct> = Result.success(this)
+
+    public fun serializeTupleVariant(name: String, variantIndex: UInt, variant: String, len: Int): Result<SerializeTupleVariant> =
+        Result.failure(CsvError(ErrorKind.Serialize("serializing enum tuple variants is not supported")))
+
+    public fun serializeMap(len: Int?): Result<SerializeMap> =
+        Result.failure(CsvError(ErrorKind.Serialize("serializing maps is not supported, if you have a use case, please file an issue at https://github.com/BurntSushi/rust-csv")))
+
+    public fun serializeStruct(name: String, len: Int): Result<SerializeStruct> = Result.success(this)
+
+    public fun serializeStructVariant(name: String, variantIndex: UInt, variant: String, len: Int): Result<SerializeStructVariant> =
+        Result.failure(CsvError(ErrorKind.Serialize("serializing enum struct variants is not supported")))
+
+    override fun serializeElement(value: Any?): Result<Unit> = wtr.writeField(value?.toString() ?: "")
+
+    override fun end(): Result<Unit> = Result.success(Unit)
+
+    override fun serializeField(key: String, value: Any?): Result<Unit> = wtr.writeField(value?.toString() ?: "")
+
+    override fun serializeField(value: Any?): Result<Unit> = wtr.writeField(value?.toString() ?: "")
+
+    override fun serializeKey(key: Any?): Result<Unit> =
+        Result.failure(CsvError(ErrorKind.Serialize("unreachable serializeKey")))
+
+    override fun serializeValue(value: Any?): Result<Unit> =
+        Result.failure(CsvError(ErrorKind.Serialize("unreachable serializeValue")))
+}
+
+/**
+ * State machine for [SeHeader].
+ */
+internal sealed class HeaderState {
+    public object Write : HeaderState()
+
+    public data class ErrorIfWrite(
+        public val err: CsvError,
+    ) : HeaderState()
+
+    public object EncounteredStructField : HeaderState()
+
+    public object InStructField : HeaderState()
+}
+
+internal fun errorScalarOutsideStruct(name: Any?): CsvError =
+    CsvError(ErrorKind.Serialize("cannot serialize $name scalar outside struct when writing headers from structs"))
+
+internal fun errorContainerInsideStruct(name: Any?): CsvError =
+    CsvError(ErrorKind.Serialize("cannot serialize $name container inside struct when writing headers from structs"))
+
+/**
+ * Header serializer matching Serde SeHeader.
+ */
+internal class SeHeader(
+    public val wtr: Writer,
+    public var state: HeaderState = HeaderState.Write,
+) : SerializeSeq,
+    SerializeTuple,
+    SerializeTupleStruct,
+    SerializeTupleVariant,
+    SerializeMap,
+    SerializeStruct,
+    SerializeStructVariant {
+    public fun wroteHeader(): Boolean =
+        when (state) {
+            HeaderState.Write, is HeaderState.ErrorIfWrite -> false
+            HeaderState.EncounteredStructField, HeaderState.InStructField -> true
+        }
+
+    public fun handleScalar(name: Any?): Result<Unit> =
+        when (val s = state) {
+            HeaderState.Write -> {
+                state = HeaderState.ErrorIfWrite(errorScalarOutsideStruct(name))
+                Result.success(Unit)
+            }
+            is HeaderState.ErrorIfWrite, HeaderState.InStructField -> Result.success(Unit)
+            HeaderState.EncounteredStructField -> Result.failure(errorScalarOutsideStruct(name))
+        }
+
+    public fun handleContainer(name: Any?): Result<SeHeader> =
+        if (state is HeaderState.InStructField) {
+            Result.failure(errorContainerInsideStruct(name))
+        } else {
+            Result.success(this)
+        }
+
+    public fun serializeBool(v: Boolean): Result<Unit> = handleScalar(v)
+
+    public fun serializeI8(v: Byte): Result<Unit> = handleScalar(v)
+
+    public fun serializeI16(v: Short): Result<Unit> = handleScalar(v)
+
+    public fun serializeI32(v: Int): Result<Unit> = handleScalar(v)
+
+    public fun serializeI64(v: Long): Result<Unit> = handleScalar(v)
+
+    public fun serializeI128(v: String): Result<Unit> = handleScalar(v)
+
+    public fun serializeU8(v: UByte): Result<Unit> = handleScalar(v)
+
+    public fun serializeU16(v: UShort): Result<Unit> = handleScalar(v)
+
+    public fun serializeU32(v: UInt): Result<Unit> = handleScalar(v)
+
+    public fun serializeU64(v: ULong): Result<Unit> = handleScalar(v)
+
+    public fun serializeU128(v: String): Result<Unit> = handleScalar(v)
+
+    public fun serializeF32(v: Float): Result<Unit> = handleScalar(v)
+
+    public fun serializeF64(v: Double): Result<Unit> = handleScalar(v)
+
+    public fun serializeChar(v: Char): Result<Unit> = handleScalar(v)
+
+    public fun serializeStr(value: String): Result<Unit> = handleScalar(value)
+
+    public fun serializeBytes(value: ByteArray): Result<Unit> = handleScalar("&[u8]")
+
+    public fun serializeNone(): Result<Unit> = handleScalar("None")
+
+    public fun serializeSome(value: String): Result<Unit> = handleScalar("Some(_)")
+
+    public fun serializeUnit(): Result<Unit> = handleScalar("()")
+
+    public fun serializeUnitStruct(name: String): Result<Unit> = handleScalar(name)
+
+    public fun serializeUnitVariant(name: String, variantIndex: UInt, variant: String): Result<Unit> =
+        handleScalar("$name::$variant")
+
+    public fun serializeNewtypeStruct(name: String, value: String): Result<Unit> = handleScalar("$name(_)")
+
+    public fun serializeNewtypeVariant(name: String, variantIndex: UInt, variant: String, value: String): Result<Unit> =
+        handleScalar("$name::$variant(_)")
+
+    public fun serializeSeq(len: Int?): Result<SerializeSeq> = handleContainer("sequence")
+
+    public fun serializeTuple(len: Int): Result<SerializeTuple> = handleContainer("tuple")
+
+    public fun serializeTupleStruct(name: String, len: Int): Result<SerializeTupleStruct> = handleContainer(name)
+
+    public fun serializeTupleVariant(name: String, variantIndex: UInt, variant: String, len: Int): Result<SerializeTupleVariant> =
+        Result.failure(CsvError(ErrorKind.Serialize("serializing enum tuple variants is not supported")))
+
+    public fun serializeMap(len: Int?): Result<SerializeMap> =
+        Result.failure(CsvError(ErrorKind.Serialize("serializing maps is not supported, if you have a use case, please file an issue at https://github.com/BurntSushi/rust-csv")))
+
+    public fun serializeStruct(name: String, len: Int): Result<SerializeStruct> = handleContainer(name)
+
+    public fun serializeStructVariant(name: String, variantIndex: UInt, variant: String, len: Int): Result<SerializeStructVariant> =
+        Result.failure(CsvError(ErrorKind.Serialize("serializing enum struct variants is not supported")))
+
+    override fun serializeElement(value: Any?): Result<Unit> = handleScalar(value)
+
+    override fun end(): Result<Unit> = Result.success(Unit)
+
+    override fun serializeField(key: String, value: Any?): Result<Unit> {
+        val oldState = state
+        state = HeaderState.EncounteredStructField
+        if (oldState is HeaderState.ErrorIfWrite) {
+            return Result.failure(oldState.err)
+        }
+        val writeRes = wtr.writeField(key)
+        if (writeRes.isFailure) return writeRes
+
+        state = HeaderState.InStructField
+        if (value is String) {
+            val res = handleScalar(value)
+            if (res.isFailure) return res
+        }
+        state = HeaderState.EncounteredStructField
+        return Result.success(Unit)
+    }
+
+    override fun serializeField(value: Any?): Result<Unit> = handleScalar(value)
+
+    override fun serializeKey(key: Any?): Result<Unit> =
+        Result.failure(CsvError(ErrorKind.Serialize("unreachable serializeKey")))
+
+    override fun serializeValue(value: Any?): Result<Unit> =
+        Result.failure(CsvError(ErrorKind.Serialize("unreachable serializeValue")))
+
+    public companion object {
+        public fun new(wtr: Writer): SeHeader = SeHeader(wtr)
+    }
+}
+
+internal interface SerializeSeq {
+    public fun serializeElement(value: Any?): Result<Unit>
+
+    public fun end(): Result<Unit>
+}
+
+internal interface SerializeTuple {
+    public fun serializeElement(value: Any?): Result<Unit>
+
+    public fun end(): Result<Unit>
+}
+
+internal interface SerializeTupleStruct {
+    public fun serializeField(value: Any?): Result<Unit>
+
+    public fun end(): Result<Unit>
+}
+
+internal interface SerializeTupleVariant {
+    public fun serializeField(value: Any?): Result<Unit>
+
+    public fun end(): Result<Unit>
+}
+
+internal interface SerializeMap {
+    public fun serializeKey(key: Any?): Result<Unit>
+
+    public fun serializeValue(value: Any?): Result<Unit>
+
+    public fun end(): Result<Unit>
+}
+
+internal interface SerializeStruct {
+    public fun serializeField(key: String, value: Any?): Result<Unit>
+
+    public fun end(): Result<Unit>
+}
+
+internal interface SerializeStructVariant {
+    public fun serializeField(key: String, value: Any?): Result<Unit>
+
+    public fun end(): Result<Unit>
 }
 
 /**

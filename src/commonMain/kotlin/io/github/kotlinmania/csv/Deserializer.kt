@@ -3,7 +3,6 @@
 
 package io.github.kotlinmania.csv
 
-import kotlin.native.HiddenFromObjC
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.StructureKind
@@ -11,6 +10,7 @@ import kotlinx.serialization.encoding.AbstractDecoder
 import kotlinx.serialization.encoding.CompositeDecoder
 import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
+import kotlin.native.HiddenFromObjC
 
 /**
  * Deserializes a [StringRecord] into [T] using the given [DeserializationStrategy].
@@ -298,3 +298,189 @@ internal class CsvRecordDecoder(
         )
     }
 }
+
+/**
+ * A Serde deserialization error.
+ */
+public data class DeserializeError(
+    private val fieldVal: ULong?,
+    public val kind: DeserializeErrorKind,
+) {
+    public fun field(): ULong? = fieldVal
+
+    public fun kind(): DeserializeErrorKind = kind
+}
+
+/**
+ * The kind of a Serde deserialization error.
+ */
+public sealed class DeserializeErrorKind {
+    public data class Message(
+        public val msg: String,
+    ) : DeserializeErrorKind()
+
+    public data class Unsupported(
+        public val which: String,
+    ) : DeserializeErrorKind()
+
+    public object UnexpectedEndOfRow : DeserializeErrorKind()
+
+    public data class InvalidUtf8(
+        public val message: String,
+    ) : DeserializeErrorKind()
+
+    public data class ParseBool(
+        public val message: String,
+    ) : DeserializeErrorKind()
+
+    public data class ParseInt(
+        public val message: String,
+    ) : DeserializeErrorKind()
+
+    public data class ParseFloat(
+        public val message: String,
+    ) : DeserializeErrorKind()
+
+    public fun description(): String =
+        when (this) {
+            is Message -> "deserialization error"
+            is Unsupported -> "unsupported deserializer method"
+            UnexpectedEndOfRow -> "expected field, but got end of row"
+            is InvalidUtf8 -> "invalid utf-8"
+            is ParseBool -> "failed to parse bool"
+            is ParseInt -> "failed to parse integer"
+            is ParseFloat -> "failed to parse float"
+        }
+}
+
+internal interface DeRecord {
+    public fun hasHeaders(): Boolean
+
+    public fun nextHeader(): String?
+
+    public fun nextHeaderBytes(): ByteArray?
+
+    public fun nextField(): Result<String>
+
+    public fun nextFieldBytes(): Result<ByteArray>
+
+    public fun peekField(): ByteArray?
+
+    public fun error(kind: DeserializeErrorKind): DeserializeError
+}
+
+internal class DeRecordWrap<T : DeRecord>(
+    public val inner: T,
+) : DeRecord {
+    override fun hasHeaders(): Boolean = inner.hasHeaders()
+
+    override fun nextHeader(): String? = inner.nextHeader()
+
+    override fun nextHeaderBytes(): ByteArray? = inner.nextHeaderBytes()
+
+    override fun nextField(): Result<String> = inner.nextField()
+
+    override fun nextFieldBytes(): Result<ByteArray> = inner.nextFieldBytes()
+
+    override fun peekField(): ByteArray? = inner.peekField()
+
+    override fun error(kind: DeserializeErrorKind): DeserializeError = inner.error(kind)
+}
+
+internal class DeStringRecord(
+    private val record: StringRecord,
+    private val headers: StringRecord? = null,
+) : DeRecord {
+    private var idx = 0
+    private var headerIdx = 0
+
+    override fun hasHeaders(): Boolean = headers != null
+
+    override fun nextHeader(): String? =
+        if (headers != null && headerIdx < headers.len()) {
+            headers[headerIdx++]
+        } else {
+            null
+        }
+
+    override fun nextHeaderBytes(): ByteArray? = nextHeader()?.encodeToByteArray()
+
+    override fun nextField(): Result<String> {
+        if (idx < record.len()) {
+            val f = record[idx++] ?: ""
+            return Result.success(f)
+        }
+        return Result.failure(CsvError(ErrorKind.Deserialize(record.position(), "Unexpected end of row")))
+    }
+
+    override fun nextFieldBytes(): Result<ByteArray> = nextField().map { it.encodeToByteArray() }
+
+    override fun peekField(): ByteArray? =
+        if (idx < record.len()) {
+            (record[idx] ?: "").encodeToByteArray()
+        } else {
+            null
+        }
+
+    override fun error(kind: DeserializeErrorKind): DeserializeError =
+        DeserializeError(if (idx > 0) (idx - 1).toULong() else null, kind)
+}
+
+internal class DeByteRecord(
+    private val record: ByteRecord,
+    private val headers: ByteRecord? = null,
+) : DeRecord {
+    private var idx = 0
+    private var headerIdx = 0
+
+    override fun hasHeaders(): Boolean = headers != null
+
+    override fun nextHeader(): String? = nextHeaderBytes()?.decodeToString()
+
+    override fun nextHeaderBytes(): ByteArray? =
+        if (headers != null && headerIdx < headers.len()) {
+            headers[headerIdx++]
+        } else {
+            null
+        }
+
+    override fun nextField(): Result<String> = nextFieldBytes().map { it.decodeToString() }
+
+    override fun nextFieldBytes(): Result<ByteArray> {
+        if (idx < record.len()) {
+            val f = record[idx++] ?: ByteArray(0)
+            return Result.success(f)
+        }
+        return Result.failure(CsvError(ErrorKind.Deserialize(record.position(), "Unexpected end of row")))
+    }
+
+    override fun peekField(): ByteArray? =
+        if (idx < record.len()) {
+            record[idx]
+        } else {
+            null
+        }
+
+    override fun error(kind: DeserializeErrorKind): DeserializeError =
+        DeserializeError(if (idx > 0) (idx - 1).toULong() else null, kind)
+}
+
+internal fun tryPositiveInteger128(s: String): ULong? = s.toULongOrNull()
+
+internal fun tryNegativeInteger128(s: String): Long? = s.toLongOrNull()
+
+internal fun tryPositiveInteger64(s: String): ULong? = s.toULongOrNull()
+
+internal fun tryNegativeInteger64(s: String): Long? = s.toLongOrNull()
+
+internal fun tryFloat(s: String): Double? = s.toDoubleOrNull()
+
+internal fun tryPositiveInteger64Bytes(s: ByteArray): ULong? = s.decodeToString().toULongOrNull()
+
+internal fun tryNegativeInteger64Bytes(s: ByteArray): Long? = s.decodeToString().toLongOrNull()
+
+internal fun tryPositiveInteger128Bytes(s: ByteArray): ULong? = s.decodeToString().toULongOrNull()
+
+internal fun tryNegativeInteger128Bytes(s: ByteArray): Long? = s.decodeToString().toLongOrNull()
+
+internal fun tryFloatBytes(s: ByteArray): Double? = s.decodeToString().toDoubleOrNull()

@@ -302,13 +302,27 @@ internal class CsvRecordDecoder(
 /**
  * A Serde deserialization error.
  */
-public data class DeserializeError(
+public class DeserializeError(
     private val fieldVal: ULong?,
-    public val kind: DeserializeErrorKind,
+    private val kindVal: DeserializeErrorKind,
 ) {
     public fun field(): ULong? = fieldVal
 
-    public fun kind(): DeserializeErrorKind = kind
+    public fun kind(): DeserializeErrorKind = kindVal
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is DeserializeError) return false
+        return fieldVal == other.fieldVal && kindVal == other.kindVal
+    }
+
+    override fun hashCode(): Int {
+        var result = fieldVal?.hashCode() ?: 0
+        result = 31 * result + kindVal.hashCode()
+        return result
+    }
+
+    override fun toString(): String = "DeserializeError(field=$fieldVal, kind=$kindVal)"
 }
 
 /**

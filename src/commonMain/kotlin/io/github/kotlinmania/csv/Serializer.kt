@@ -1,6 +1,9 @@
 // port-lint: source serializer.rs
+@file:OptIn(kotlin.experimental.ExperimentalObjCRefinement::class)
+
 package io.github.kotlinmania.csv
 
+import kotlin.native.HiddenFromObjC
 import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.StructureKind
@@ -12,6 +15,7 @@ import kotlinx.serialization.modules.SerializersModule
 /**
  * Serialize the given value to the given writer using the provided [SerializationStrategy].
  */
+@HiddenFromObjC
 public fun <T> serialize(
     writer: Writer,
     serializer: SerializationStrategy<T>,
@@ -21,6 +25,7 @@ public fun <T> serialize(
 /**
  * Serialize the given value to the given writer using the default serializer.
  */
+@HiddenFromObjC
 public inline fun <reified T> serialize(
     writer: Writer,
     value: T,
@@ -29,6 +34,7 @@ public inline fun <reified T> serialize(
 /**
  * Serializes values into CSV records using kotlinx.serialization.
  */
+@HiddenFromObjC
 public object CsvSerializer {
     /**
      * Serializes a value as a CSV record using the provided [SerializationStrategy].
@@ -82,7 +88,7 @@ public object CsvSerializer {
  * An [Encoder] that writes each element as a CSV field into a [Writer].
  */
 @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
-public class CsvRecordEncoder(
+internal class CsvRecordEncoder(
     private val writer: Writer,
     override val serializersModule: SerializersModule = EmptySerializersModule(),
 ) : AbstractEncoder() {

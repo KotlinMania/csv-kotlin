@@ -65,6 +65,8 @@ public class StringRecord private constructor(
      *
      * If no such field exists at the given index, then return null.
      */
+    @OptIn(kotlin.experimental.ExperimentalObjCRefinement::class)
+    @kotlin.native.HiddenFromObjC
     public fun range(index: Int): IntRange? = record.range(index)
 
     /**

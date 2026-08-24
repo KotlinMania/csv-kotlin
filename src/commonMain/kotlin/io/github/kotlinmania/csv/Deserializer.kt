@@ -1,6 +1,9 @@
 // port-lint: source deserializer.rs
+@file:OptIn(kotlin.experimental.ExperimentalObjCRefinement::class)
+
 package io.github.kotlinmania.csv
 
+import kotlin.native.HiddenFromObjC
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.StructureKind
@@ -12,6 +15,7 @@ import kotlinx.serialization.modules.SerializersModule
 /**
  * Deserializes a [StringRecord] into [T] using the given [DeserializationStrategy].
  */
+@HiddenFromObjC
 public fun <T> deserializeStringRecord(
     record: StringRecord,
     deserializer: DeserializationStrategy<T>,
@@ -21,6 +25,7 @@ public fun <T> deserializeStringRecord(
 /**
  * Deserializes a [StringRecord] into [T] using the default serializer.
  */
+@HiddenFromObjC
 public inline fun <reified T> deserializeStringRecord(
     record: StringRecord,
     headers: StringRecord? = null,
@@ -29,6 +34,7 @@ public inline fun <reified T> deserializeStringRecord(
 /**
  * Deserializes a [ByteRecord] into [T] using the given [DeserializationStrategy].
  */
+@HiddenFromObjC
 public fun <T> deserializeByteRecord(
     record: ByteRecord,
     deserializer: DeserializationStrategy<T>,
@@ -38,6 +44,7 @@ public fun <T> deserializeByteRecord(
 /**
  * Deserializes a [ByteRecord] into [T] using the default serializer.
  */
+@HiddenFromObjC
 public inline fun <reified T> deserializeByteRecord(
     record: ByteRecord,
     headers: ByteRecord? = null,
@@ -46,6 +53,7 @@ public inline fun <reified T> deserializeByteRecord(
 /**
  * Deserializes values from CSV records using kotlinx.serialization.
  */
+@HiddenFromObjC
 public object CsvDeserializer {
     /**
      * Deserializes a [StringRecord] into [T] using the given [DeserializationStrategy].
@@ -116,7 +124,7 @@ public object CsvDeserializer {
  * An [AbstractDecoder] that reads elements sequentially or by header name from a list of CSV field strings.
  */
 @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
-public class CsvRecordDecoder(
+internal class CsvRecordDecoder(
     private val fields: List<String>,
     private val headers: List<String>?,
     private val position: Position?,

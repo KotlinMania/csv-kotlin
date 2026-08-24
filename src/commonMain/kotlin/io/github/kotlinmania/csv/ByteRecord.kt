@@ -81,6 +81,8 @@ public class ByteRecord : Iterable<ByteArray> {
      *
      * If no such field exists at the given index, then return null.
      */
+    @OptIn(kotlin.experimental.ExperimentalObjCRefinement::class)
+    @kotlin.native.HiddenFromObjC
     public fun range(index: Int): IntRange? {
         if (index < 0 || index >= ends.size) return null
         val start = if (index == 0) 0 else ends[index - 1]
@@ -497,14 +499,6 @@ public class ByteRecordIter internal constructor(
     public fun sizeHint(): Pair<Int, Int?> = count() to count()
 }
 
-/**
- * Inner storage for a ByteRecord.
- */
-public class ByteRecordInner(
-    public var pos: Position?,
-    public var fields: ByteArray,
-    public var bounds: Bounds,
-)
 
 /**
  * A position in CSV data.
@@ -521,21 +515,6 @@ public data class Position(
     var line: ULong = 1uL,
     var record: ULong = 0uL,
 ) {
-    /**
-     * The byte offset, starting at `0`, of this position.
-     */
-    public fun byte(): ULong = byte
-
-    /**
-     * The line number, starting at `1`, of this position.
-     */
-    public fun line(): ULong = line
-
-    /**
-     * The record index, starting with the first record at `0`.
-     */
-    public fun record(): ULong = record
-
     /**
      * Set the byte offset of this position.
      */
@@ -568,11 +547,4 @@ public data class Position(
     }
 }
 
-/**
- * Bounds representation for field offsets.
- */
-public class Bounds(
-    public val ends: MutableList<Int> = ArrayList(),
-) {
-    public fun ends(): List<Int> = ends
-}
+

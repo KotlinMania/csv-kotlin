@@ -5,11 +5,11 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 11/11 (100.0%)
-- **Function parity:** 248/426 matched (target 435) — 58.2%
-- **Class/type parity:** 30/74 matched (target 61) — 40.5%
-- **Combined symbol parity:** 278/500 matched (target 496) — 55.6%
-- **Average inline-code cosine:** 0.32 (function body across 11 matched files)
-- **Average documentation cosine:** 0.35 (doc text across 11 matched files)
+- **Function parity:** 244/426 matched (target 432) — 57.3%
+- **Class/type parity:** 27/74 matched (target 58) — 36.5%
+- **Combined symbol parity:** 271/500 matched (target 490) — 54.2%
+- **Average inline-code cosine:** 0.31 (function body across 11 matched files)
+- **Average documentation cosine:** 0.36 (doc text across 11 matched files)
 - **Cheat-zeroed Files:** 2
 - **Critical Issues:** 11 files with <0.60 function similarity
 
@@ -32,9 +32,9 @@ Every matched file is listed below with function and type symbol parity.
 - **Target:** `csv.Deserializer`
 - **Similarity:** 0.01
 - **Dependents:** 0
-- **Priority Score:** 1060810.0
-- **Functions:** 2/93 matched (target 22)
-- **Missing functions:** `deserialize_string_record`, `has_headers`, `next_header`, `next_header_bytes`, `next_field`, `next_field_bytes`, `peek_field`, `error`, `infer_deserialize`, `deserialize_any`, `deserialize_bool`, `deserialize_f32`, `deserialize_f64`, `deserialize_char`, `deserialize_str`, `deserialize_string`, `deserialize_bytes`, `deserialize_byte_buf`, `deserialize_option`, `deserialize_unit`, `deserialize_unit_struct`, `deserialize_newtype_struct`, `deserialize_seq`, `deserialize_tuple`, `deserialize_tuple_struct`, `deserialize_map`, `deserialize_struct`, `deserialize_identifier`, `deserialize_ignored_any`, `variant_seed`, `unit_variant`, `newtype_variant_seed`, `tuple_variant`, `struct_variant`, `next_element_seed`, `next_key_seed`, `next_value_seed`, `custom`, `description`, `fmt`, `field`, `kind`, `try_positive_integer128`, `try_negative_integer128`, `try_positive_integer64`, `try_negative_integer64`, `try_float`, `try_positive_integer64_bytes`, `try_negative_integer64_bytes`, `try_positive_integer128_bytes`, `try_negative_integer128_bytes`, `try_float_bytes`, `de`, `de_headers`, `b`, `with_header`, `with_header_unknown`, `with_header_missing`, `with_header_missing_ok`, `with_header_no_fields`, `with_header_empty`, `with_header_empty_ok`, `without_header`, `no_fields`, `one_field`, `one_field_128`, `two_fields`, `two_fields_too_many`, `two_fields_too_few`, `one_char`, `no_chars`, `too_many_chars`, `simple_seq`, `simple_hex_seq`, `mixed_hex_seq`, `bad_hex_seq`, `seq_in_struct`, `seq_in_struct_tail`, `map_headers`, `map_no_headers`, `bytes`, `adjacent_fixed_arrays`, `enum_label_simple_tagged`, `enum_untagged`, `option_empty_field`, `option_invalid_field`, `borrowed`, `borrowed_map`, `borrowed_map_bytes`, `flatten`, `partially_invalid_utf8`
+- **Priority Score:** 1050809.9
+- **Functions:** 3/93 matched (target 26)
+- **Missing functions:** `has_headers`, `next_header`, `next_header_bytes`, `next_field`, `next_field_bytes`, `peek_field`, `error`, `infer_deserialize`, `deserialize_any`, `deserialize_bool`, `deserialize_f32`, `deserialize_f64`, `deserialize_char`, `deserialize_str`, `deserialize_string`, `deserialize_bytes`, `deserialize_byte_buf`, `deserialize_option`, `deserialize_unit`, `deserialize_unit_struct`, `deserialize_newtype_struct`, `deserialize_seq`, `deserialize_tuple`, `deserialize_tuple_struct`, `deserialize_map`, `deserialize_struct`, `deserialize_identifier`, `deserialize_ignored_any`, `variant_seed`, `unit_variant`, `newtype_variant_seed`, `tuple_variant`, `struct_variant`, `next_element_seed`, `next_key_seed`, `next_value_seed`, `custom`, `description`, `fmt`, `field`, `kind`, `try_positive_integer128`, `try_negative_integer128`, `try_positive_integer64`, `try_negative_integer64`, `try_float`, `try_positive_integer64_bytes`, `try_negative_integer64_bytes`, `try_positive_integer128_bytes`, `try_negative_integer128_bytes`, `try_float_bytes`, `de`, `de_headers`, `b`, `with_header`, `with_header_unknown`, `with_header_missing`, `with_header_missing_ok`, `with_header_no_fields`, `with_header_empty`, `with_header_empty_ok`, `without_header`, `no_fields`, `one_field`, `one_field_128`, `two_fields`, `two_fields_too_many`, `two_fields_too_few`, `one_char`, `no_chars`, `too_many_chars`, `simple_seq`, `simple_hex_seq`, `mixed_hex_seq`, `bad_hex_seq`, `seq_in_struct`, `seq_in_struct_tail`, `map_headers`, `map_no_headers`, `bytes`, `adjacent_fixed_arrays`, `enum_label_simple_tagged`, `enum_untagged`, `option_empty_field`, `option_invalid_field`, `borrowed`, `borrowed_map`, `borrowed_map_bytes`, `flatten`, `partially_invalid_utf8`
 - **Types:** 1/15 matched (target 7)
 - **Missing types:** `DeRecord`, `DeRecordWrap`, `DeStringRecord`, `DeByteRecord`, `Error`, `Variant`, `DeserializeError`, `DeserializeErrorKind`, `Foo`, `Bar`, `Label`, `Boolish`, `Input`, `Properties`
 - **Tests:** 0/39 matched
@@ -57,7 +57,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Similarity:** 0.01
 - **Dependents:** 0
 - **Priority Score:** 909309.9
-- **Functions:** 3/76 matched (target 22)
+- **Functions:** 3/76 matched (target 24)
 - **Missing functions:** `serialize_bool`, `serialize_i8`, `serialize_i16`, `serialize_i32`, `serialize_i64`, `serialize_i128`, `serialize_u8`, `serialize_u16`, `serialize_u32`, `serialize_u64`, `serialize_u128`, `serialize_f32`, `serialize_f64`, `serialize_char`, `serialize_str`, `serialize_bytes`, `serialize_none`, `serialize_some`, `serialize_unit`, `serialize_unit_struct`, `serialize_unit_variant`, `serialize_newtype_struct`, `serialize_newtype_variant`, `serialize_seq`, `serialize_tuple_struct`, `serialize_tuple_variant`, `serialize_map`, `serialize_struct`, `serialize_struct_variant`, `serialize_element`, `end`, `serialize_field`, `serialize_key`, `serialize_value`, `custom`, `error_scalar_outside_struct`, `error_container_inside_struct`, `new`, `wrote_header`, `handle_scalar`, `handle_container`, `serialize_err`, `serialize_header_err`, `bool`, `integer`, `integer_u128`, `integer_i128`, `float`, `float_nan`, `char`, `str`, `bytes`, `option`, `unit`, `struct_unit`, `struct_newtype`, `enum_units`, `enum_newtypes`, `seq`, `tuple`, `tuple_struct`, `tuple_variant`, `enum_struct_variant`, `struct_no_headers`, `struct_no_headers_128`, `struct_headers`, `struct_headers_nested`, `struct_headers_nested_seq`, `struct_headers_inside_tuple`, `struct_headers_inside_tuple_scalar_before`, `struct_headers_inside_tuple_scalar_after`, `struct_headers_inside_seq`, `struct_headers_inside_nested_tuple_seq`
 - **Types:** 0/17 matched (target 7)
 - **Missing types:** `SeRecord`, `Ok`, `Error`, `SerializeSeq`, `SerializeTuple`, `SerializeTupleStruct`, `SerializeTupleVariant`, `SerializeMap`, `SerializeStruct`, `SerializeStructVariant`, `HeaderState`, `SeHeader`, `Foo`, `Wat`, `Nested`, `Bar`, `Baz`
@@ -69,14 +69,26 @@ Every matched file is listed below with function and type symbol parity.
 - **Target:** `csv.Writer`
 - **Similarity:** 0.51
 - **Dependents:** 0
-- **Priority Score:** 106004.9
-- **Functions:** 45/53 matched (target 75)
+- **Priority Score:** 126004.9
+- **Functions:** 45/53 matched (target 72)
 - **Missing functions:** `from_path`, `wtr_as_string`, `into_string`, `write`, `serialize_with_headers`, `serialize_no_headers`, `serialize_no_headers_128`, `serialize_tuple`
-- **Types:** 5/7 matched (target 6)
-- **Missing types:** `MarkWriteAndFlush`, `Row`
+- **Types:** 3/7 matched (target 4)
+- **Missing types:** `WriterState`, `Buffer`, `MarkWriteAndFlush`, `Row`
 - **Tests:** 14/21 matched
 
-### 5. reader
+### 5. byte_record
+
+- **Target:** `csv.ByteRecord`
+- **Similarity:** 0.51
+- **Dependents:** 0
+- **Priority Score:** 98104.9
+- **Functions:** 69/73 matched (target 91)
+- **Missing functions:** `byte`, `line`, `record`, `b`
+- **Types:** 3/8 matched (target 4)
+- **Missing types:** `ByteRecordInner`, `Bounds`, `Output`, `IntoIter`, `Item`
+- **Tests:** 25/26 matched
+
+### 6. reader
 
 - **Target:** `csv.Reader`
 - **Similarity:** 0.58
@@ -88,28 +100,16 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** `ReaderState`, `ReaderEofState`, `Headers`, `Item`
 - **Tests:** 20/23 matched
 
-### 6. byte_record
-
-- **Target:** `csv.ByteRecord`
-- **Similarity:** 0.55
-- **Dependents:** 0
-- **Priority Score:** 48104.5
-- **Functions:** 72/73 matched (target 95)
-- **Missing functions:** `b`
-- **Types:** 5/8 matched (target 6)
-- **Missing types:** `Output`, `IntoIter`, `Item`
-- **Tests:** 25/26 matched
-
 ### 7. error
 
 - **Target:** `csv.Error`
-- **Similarity:** 0.51
+- **Similarity:** 0.43
 - **Dependents:** 0
-- **Priority Score:** 12204.9
-- **Functions:** 16/16 matched (target 27)
-- **Missing functions:** _none_
-- **Types:** 5/6 matched (target 12)
-- **Missing types:** `Result`
+- **Priority Score:** 22205.7
+- **Functions:** 14/16 matched (target 25)
+- **Missing functions:** `field`, `valid_up_to`
+- **Types:** 6/6 matched (target 13)
+- **Missing types:** _none_
 
 ### 8. lib
 

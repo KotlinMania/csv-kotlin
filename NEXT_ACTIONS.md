@@ -6,8 +6,8 @@ Based on AST analysis, here are the concrete next steps.
 
 - **Files Present:** 11/11 (100.0%)
 - **Function parity:** 382/426 matched (target 658) — 89.7%
-- **Class/type parity:** 61/74 matched (target 126) — 82.4%
-- **Combined symbol parity:** 443/500 matched (target 784) — 88.6%
+- **Class/type parity:** 56/74 matched (target 122) — 75.7%
+- **Combined symbol parity:** 438/500 matched (target 780) — 87.6%
 - **Average inline-code cosine:** 0.49 (function body across 9 matched files)
 - **Average documentation cosine:** 0.48 (doc text across 9 matched files)
 - **Cheat-zeroed Files:** 0
@@ -51,20 +51,32 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** `Error`, `Variant`, `Bar`, `Row`
 - **Tests:** 36/39 matched
 
-### 3. serializer
+### 3. writer
+
+- **Target:** `csv.Writer`
+- **Similarity:** 0.57
+- **Dependents:** 0
+- **Priority Score:** 76004.3
+- **Functions:** 50/53 matched (target 79)
+- **Missing functions:** `wtr_as_string`, `into_string`, `write`
+- **Types:** 3/7 matched (target 5)
+- **Missing types:** `WriterState`, `HeaderState`, `Buffer`, `MarkWriteAndFlush`
+- **Tests:** 18/21 matched
+
+### 4. serializer
 
 - **Target:** `csv.Serializer`
 - **Similarity:** 0.57
 - **Dependents:** 0
-- **Priority Score:** 49304.3
+- **Priority Score:** 59304.3
 - **Functions:** 74/76 matched (target 138)
 - **Missing functions:** `serialize_err`, `serialize_header_err`
-- **Types:** 15/17 matched (target 29)
-- **Missing types:** `Ok`, `Error`
+- **Types:** 14/17 matched (target 29)
+- **Missing types:** `Ok`, `Error`, `HeaderState`
 - **Tests:** 30/32 matched
 - **Lint issues:** 2
 
-### 4. byte_record
+### 5. byte_record
 
 - **Target:** `csv.ByteRecord`
 - **Similarity:** 0.52
@@ -76,7 +88,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** `Output`, `IntoIter`, `Item`
 - **Tests:** 25/26 matched
 
-### 5. reader
+### 6. reader
 
 - **Target:** `csv.Reader`
 - **Similarity:** 0.61
@@ -87,18 +99,6 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 11/12 matched (target 13)
 - **Missing types:** `Item`
 - **Tests:** 20/23 matched
-
-### 6. writer
-
-- **Target:** `csv.Writer`
-- **Similarity:** 0.57
-- **Dependents:** 0
-- **Priority Score:** 36004.3
-- **Functions:** 50/53 matched (target 79)
-- **Missing functions:** `wtr_as_string`, `into_string`, `write`
-- **Types:** 7/7 matched (target 9)
-- **Missing types:** _none_
-- **Tests:** 18/21 matched
 
 ### 7. error
 

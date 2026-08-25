@@ -104,8 +104,15 @@ class WriterTest {
         assertEquals("a,b,c\na\n", wtr.asString())
     }
 
+    private class MarkWriteAndFlush(
+        val buffer: MutableList<Byte> = mutableListOf(),
+    ) {
+        fun intoString(): String = buffer.toByteArray().decodeToString()
+    }
+
     @Test
     fun fullBufferShouldNotFlushUnderlying() {
+        val underlying = MarkWriteAndFlush()
         val wtr = WriterBuilder.new().bufferCapacity(4).fromWriter()
         wtr.writeByteRecord(ByteRecord.fromStrings(listOf("a", "b")))
         wtr.writeByteRecord(ByteRecord.fromStrings(listOf("c", "d")))

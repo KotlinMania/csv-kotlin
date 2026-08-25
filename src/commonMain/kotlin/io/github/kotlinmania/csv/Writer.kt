@@ -442,4 +442,3 @@ public class Writer internal constructor(
         public fun fromWriter(): Writer = WriterBuilder.new().fromWriter()
     }
 }
-

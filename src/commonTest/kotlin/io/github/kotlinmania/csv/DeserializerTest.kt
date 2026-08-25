@@ -3,7 +3,6 @@ package io.github.kotlinmania.csv
 
 import kotlinx.serialization.Serializable
 import kotlin.test.Test
-import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -60,13 +59,19 @@ class DeserializerTest {
     @Serializable
     public sealed class Boolish {
         @Serializable
-        public data class Bool(val value: Boolean) : Boolish()
+        public data class Bool(
+            val value: Boolean,
+        ) : Boolish()
 
         @Serializable
-        public data class Num(val value: Long) : Boolish()
+        public data class Num(
+            val value: Long,
+        ) : Boolish()
 
         @Serializable
-        public data class Str(val value: String) : Boolish()
+        public data class Str(
+            val value: String,
+        ) : Boolish()
     }
 
     @Serializable
@@ -321,9 +326,10 @@ class DeserializerTest {
     fun borrowedMapBytes() {
         val headers = ByteRecord.fromStrings(listOf("a", "b", "c"))
         val record = ByteRecord.fromStrings(listOf("aardvark", "bee", "cat"))
-        val map = (0 until headers.len()).associate {
-            (headers[it]?.decodeToString() ?: "") to (record[it]?.decodeToString() ?: "")
-        }
+        val map =
+            (0 until headers.len()).associate {
+                (headers[it]?.decodeToString() ?: "") to (record[it]?.decodeToString() ?: "")
+            }
         assertEquals(mapOf("a" to "aardvark", "b" to "bee", "c" to "cat"), map)
     }
 

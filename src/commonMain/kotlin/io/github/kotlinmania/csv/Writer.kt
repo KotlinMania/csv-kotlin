@@ -442,3 +442,23 @@ public class Writer internal constructor(
         public fun fromWriter(): Writer = WriterBuilder.new().fromWriter()
     }
 }
+
+internal enum class HeaderState {
+    WRITE,
+    DID_WRITE,
+    DID_NOT_WRITE,
+    NONE,
+}
+
+internal class WriterState(
+    var header: HeaderState = HeaderState.NONE,
+    var flexible: Boolean = false,
+    var firstFieldCount: ULong? = null,
+    var fieldsWritten: ULong = 0uL,
+    var panicked: Boolean = false,
+)
+
+internal class Buffer(
+    val buf: MutableList<Byte> = ArrayList(),
+    var len: Int = 0,
+)

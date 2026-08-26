@@ -6,8 +6,8 @@ Based on AST analysis, here are the concrete next steps.
 
 - **Files Present:** 11/11 (100.0%)
 - **Function parity:** 382/426 matched (target 659) — 89.7%
-- **Class/type parity:** 57/74 matched (target 123) — 77.0%
-- **Combined symbol parity:** 439/500 matched (target 782) — 87.8%
+- **Class/type parity:** 60/74 matched (target 126) — 81.1%
+- **Combined symbol parity:** 442/500 matched (target 785) — 88.4%
 - **Average inline-code cosine:** 0.49 (function body across 9 matched files)
 - **Average documentation cosine:** 0.48 (doc text across 9 matched files)
 - **Cheat-zeroed Files:** 0
@@ -51,19 +51,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** `Error`, `Variant`, `Bar`, `Row`
 - **Tests:** 36/39 matched
 
-### 3. writer
-
-- **Target:** `csv.Writer`
-- **Similarity:** 0.57
-- **Dependents:** 0
-- **Priority Score:** 66004.3
-- **Functions:** 50/53 matched (target 80)
-- **Missing functions:** `wtr_as_string`, `into_string`, `write`
-- **Types:** 4/7 matched (target 6)
-- **Missing types:** `WriterState`, `HeaderState`, `Buffer`
-- **Tests:** 18/21 matched
-
-### 4. serializer
+### 3. serializer
 
 - **Target:** `csv.Serializer`
 - **Similarity:** 0.57
@@ -74,9 +62,8 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 14/17 matched (target 29)
 - **Missing types:** `Ok`, `Error`, `HeaderState`
 - **Tests:** 30/32 matched
-- **Lint issues:** 2
 
-### 5. byte_record
+### 4. byte_record
 
 - **Target:** `csv.ByteRecord`
 - **Similarity:** 0.52
@@ -88,7 +75,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** `Output`, `IntoIter`, `Item`
 - **Tests:** 25/26 matched
 
-### 6. reader
+### 5. reader
 
 - **Target:** `csv.Reader`
 - **Similarity:** 0.61
@@ -99,6 +86,18 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 11/12 matched (target 13)
 - **Missing types:** `Item`
 - **Tests:** 20/23 matched
+
+### 6. writer
+
+- **Target:** `csv.Writer`
+- **Similarity:** 0.57
+- **Dependents:** 0
+- **Priority Score:** 36004.3
+- **Functions:** 50/53 matched (target 80)
+- **Missing functions:** `wtr_as_string`, `into_string`, `write`
+- **Types:** 7/7 matched (target 9)
+- **Missing types:** _none_
+- **Tests:** 18/21 matched
 
 ### 7. error
 

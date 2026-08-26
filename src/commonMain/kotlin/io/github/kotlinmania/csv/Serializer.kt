@@ -422,11 +422,13 @@ internal class CsvRecordEncoder(
     private var depth = 0
 
     override fun beginStructure(descriptor: SerialDescriptor): CompositeEncoder {
+        checkNotNull(descriptor)
         depth++
         return this
     }
 
     override fun endStructure(descriptor: SerialDescriptor) {
+        checkNotNull(descriptor)
         depth--
     }
 

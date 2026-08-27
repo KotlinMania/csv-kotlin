@@ -263,6 +263,10 @@ public class StringRecord private constructor(
         }
 
         public fun fromIter(iter: Iterable<String>): StringRecord = from(iter.toList())
+
+        public typealias Output = StringRecord
+        public typealias IntoIter = Iterator<String>
+        public typealias Item = String
     }
 }
 
@@ -321,3 +325,4 @@ internal fun trimUnicode(s: String): String {
 public typealias StringRecordOutput = StringRecord
 public typealias StringRecordIntoIter = Iterator<String>
 public typealias StringRecordItem = String
+

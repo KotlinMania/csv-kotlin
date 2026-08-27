@@ -1,4 +1,4 @@
-// port-lint: tests deserializer.rs
+// port-lint: tests csv/src/deserializer.rs
 package io.github.kotlinmania.csv
 
 import kotlinx.serialization.Serializable

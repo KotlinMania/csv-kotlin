@@ -1,4 +1,4 @@
-// port-lint: source cookbook.rs
+// port-lint: source csv/src/cookbook.rs
 package io.github.kotlinmania.csv
 
 /**

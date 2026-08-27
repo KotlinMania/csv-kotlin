@@ -1,4 +1,4 @@
-// port-lint: source deserializer.rs
+// port-lint: source csv/src/deserializer.rs
 @file:OptIn(kotlin.experimental.ExperimentalObjCRefinement::class)
 
 package io.github.kotlinmania.csv

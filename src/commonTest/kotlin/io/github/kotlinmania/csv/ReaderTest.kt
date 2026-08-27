@@ -1,4 +1,4 @@
-// port-lint: tests csv/src/reader.rs
+// port-lint: tests reader.rs
 package io.github.kotlinmania.csv
 
 import kotlin.test.Test
@@ -9,6 +9,9 @@ import kotlin.test.assertTrue
 
 class ReaderTest {
     private fun b(s: String): ByteArray = s.encodeToByteArray()
+
+    private fun newpos(byte: ULong, line: ULong, record: ULong): Position =
+        Position.new().setByte(byte).setLine(line).setRecord(record)
 
     @Test
     fun readByteRecord() {

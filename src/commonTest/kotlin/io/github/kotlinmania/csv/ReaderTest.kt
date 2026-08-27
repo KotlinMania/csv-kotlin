@@ -11,7 +11,11 @@ class ReaderTest {
     private fun b(s: String): ByteArray = s.encodeToByteArray()
 
     private fun newpos(byte: ULong, line: ULong, record: ULong): Position =
-        Position.new().setByte(byte).setLine(line).setRecord(record)
+        Position
+            .new()
+            .setByte(byte)
+            .setLine(line)
+            .setRecord(record)
 
     @Test
     fun readByteRecord() {

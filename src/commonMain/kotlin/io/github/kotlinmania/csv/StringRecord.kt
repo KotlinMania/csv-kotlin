@@ -325,4 +325,3 @@ internal fun trimUnicode(s: String): String {
 public typealias StringRecordOutput = StringRecord
 public typealias StringRecordIntoIter = Iterator<String>
 public typealias StringRecordItem = String
-

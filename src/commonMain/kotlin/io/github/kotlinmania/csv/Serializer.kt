@@ -79,7 +79,6 @@ public fun <T> serializeHeaderErr(
     value: T,
 ): Result<Boolean> = serializeHeader(writer, serializer, value)
 
-
 /**
  * Serializes values into CSV records using kotlinx.serialization.
  */
@@ -536,8 +535,13 @@ public typealias SerializerError = CsvError
 
 public sealed interface HeaderState {
     public data object Write : HeaderState
-    public data class ErrorIfWrite(public val error: CsvError) : HeaderState
+
+    public data class ErrorIfWrite(
+        public val error: CsvError,
+    ) : HeaderState
+
     public data object EncounteredStructField : HeaderState
+
     public data object InStructField : HeaderState
 }
 
@@ -554,6 +558,3 @@ public inline fun <reified T> serializeHeaderErr(value: T): CsvError {
     val res = serializeHeader(wtr, value)
     return res.exceptionOrNull() as? CsvError ?: CsvError(ErrorKind.Serialize("expected error"))
 }
-
-
-

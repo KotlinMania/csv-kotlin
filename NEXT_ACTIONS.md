@@ -4,13 +4,13 @@ Based on AST analysis, here are the concrete next steps.
 
 ## Summary
 
-- **Files Present:** 11/11 (100.0%)
-- **Function parity:** 382/426 matched (target 659) — 89.7%
-- **Class/type parity:** 60/74 matched (target 126) — 81.1%
-- **Combined symbol parity:** 442/500 matched (target 785) — 88.4%
-- **Average inline-code cosine:** 0.49 (function body across 9 matched files)
-- **Average documentation cosine:** 0.48 (doc text across 9 matched files)
-- **Cheat-zeroed Files:** 0
+- **Files Present:** 11/49 (22.4%)
+- **Function parity:** 382/561 matched (target 659) — 68.1%
+- **Class/type parity:** 60/97 matched (target 126) — 61.9%
+- **Combined symbol parity:** 442/658 matched (target 785) — 67.2%
+- **Average inline-code cosine:** 0.51 (function body across 8 matched files)
+- **Average documentation cosine:** 0.52 (doc text across 8 matched files)
+- **Cheat-zeroed Files:** 1
 - **Critical Issues:** 10 files with <0.60 function similarity
 
 ## Priority 1: Fix Incomplete High-Dependency Files
@@ -27,7 +27,19 @@ No missing high-value files detected.
 
 Every matched file is listed below with function and type symbol parity.
 
-### 1. string_record
+### 1. csv.reader
+
+- **Target:** `csv.Reader`
+- **Similarity:** 0.61
+- **Dependents:** 1
+- **Priority Score:** 1047803.9
+- **Functions:** 63/66 matched (target 117)
+- **Missing functions:** `b`, `s`, `newpos`
+- **Types:** 11/12 matched (target 13)
+- **Missing types:** `Item`
+- **Tests:** 20/23 matched
+
+### 2. csv.string_record
 
 - **Target:** `csv.StringRecord`
 - **Similarity:** 0.55
@@ -39,7 +51,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** `Output`, `IntoIter`, `Item`
 - **Tests:** 9/9 matched
 
-### 2. deserializer
+### 3. csv.deserializer
 
 - **Target:** `csv.Deserializer`
 - **Similarity:** 0.36
@@ -51,7 +63,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** `Error`, `Variant`, `Bar`, `Row`
 - **Tests:** 36/39 matched
 
-### 3. serializer
+### 4. csv.serializer
 
 - **Target:** `csv.Serializer`
 - **Similarity:** 0.57
@@ -63,7 +75,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** `Ok`, `Error`, `HeaderState`
 - **Tests:** 30/32 matched
 
-### 4. byte_record
+### 5. csv.byte_record
 
 - **Target:** `csv.ByteRecord`
 - **Similarity:** 0.52
@@ -75,19 +87,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** `Output`, `IntoIter`, `Item`
 - **Tests:** 25/26 matched
 
-### 5. reader
-
-- **Target:** `csv.Reader`
-- **Similarity:** 0.61
-- **Dependents:** 0
-- **Priority Score:** 47803.9
-- **Functions:** 63/66 matched (target 117)
-- **Missing functions:** `b`, `s`, `newpos`
-- **Types:** 11/12 matched (target 13)
-- **Missing types:** `Item`
-- **Tests:** 20/23 matched
-
-### 6. writer
+### 6. csv.writer
 
 - **Target:** `csv.Writer`
 - **Similarity:** 0.57
@@ -99,7 +99,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Tests:** 18/21 matched
 
-### 7. error
+### 7. csv.error
 
 - **Target:** `csv.Error`
 - **Similarity:** 0.45
@@ -110,18 +110,21 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 6/6 matched (target 14)
 - **Missing types:** _none_
 
-### 8. lib
+### 8. csv.lib
 
-- **Target:** `csv.Lib`
-- **Similarity:** 0.34
+- **Target:** `csv.Lib [STUB] [PROVENANCE-FALLBACK]`
+- **Similarity:** 0.00
 - **Dependents:** 0
-- **Priority Score:** 706.6
+- **Priority Score:** 710.0
 - **Functions:** 4/4 matched (target 7)
 - **Missing functions:** _none_
 - **Types:** 3/3 matched (target 5)
 - **Missing types:** _none_
+- **Provenance warning:** port-lint provenance header matched only after fallback normalization: `lib.rs` vs expected `lib.rs`
+- **Proposed provenance header:** `// port-lint: source lib.rs` (current: `// port-lint: source lib.rs`)
+- **Lint issues:** 1
 
-### 9. debug
+### 9. csv.debug
 
 - **Target:** `csv.Debug`
 - **Similarity:** 0.45
@@ -132,7 +135,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/1 matched (target 5)
 - **Missing types:** _none_
 
-### 10. cookbook
+### 10. csv.cookbook
 
 - **Target:** `csv.Cookbook [STUB]`
 - **Similarity:** 1.00
@@ -143,7 +146,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 0/0 matched (target 1)
 - **Missing types:** _none_
 
-### 11. tutorial
+### 11. csv.tutorial
 
 - **Target:** `csv.Tutorial [STUB]`
 - **Similarity:** 1.00

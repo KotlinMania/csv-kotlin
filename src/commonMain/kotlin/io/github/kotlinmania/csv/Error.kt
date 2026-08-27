@@ -1,4 +1,4 @@
-// port-lint: source error.rs
+// port-lint: source csv/src/error.rs
 package io.github.kotlinmania.csv
 
 public typealias Result<T> = kotlin.Result<T>

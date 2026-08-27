@@ -116,4 +116,3 @@ public fun csvWriter(): Writer = Writer.new()
  */
 public fun <T> invalidOption(supplier: () -> T?): T? =
     runCatching { supplier() }.getOrNull()
-

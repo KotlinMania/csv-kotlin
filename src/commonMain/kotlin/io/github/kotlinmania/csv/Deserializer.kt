@@ -642,50 +642,86 @@ public fun b(bytes: ByteArray): ByteArray = bytes
 
 public typealias DeserializerError = DeserializeError
 
-public data class Variant(public val name: String, public val value: String? = null)
-public data class Bar(public val bar: String = "")
-public data class Row(public val fields: List<String> = emptyList())
+public data class Variant(
+    public val name: String,
+    public val value: String? = null,
+)
+
+public data class Bar(
+    public val bar: String = "",
+)
+
+public data class Row(
+    public val fields: List<String> = emptyList(),
+)
 
 public fun inferDeserialize(s: String): Any? =
     s.toIntOrNull() ?: s.toDoubleOrNull() ?: s.toBooleanStrictOrNull() ?: s
 
 public fun deserializeAny(s: String): Any? = inferDeserialize(s)
+
 public fun deserializeBool(s: String): Boolean? = s.toBooleanStrictOrNull()
+
 public fun deserializeF32(s: String): Float? = s.toFloatOrNull()
+
 public fun deserializeF64(s: String): Double? = s.toDoubleOrNull()
+
 public fun deserializeChar(s: String): Char? = s.singleOrNull()
+
 public fun deserializeStr(s: String): String = s
+
 public fun deserializeString(s: String): String = s
+
 public fun deserializeBytes(s: ByteArray): ByteArray = s
+
 public fun deserializeByteBuf(s: ByteArray): ByteArray = s
+
 @HiddenFromObjC
 public fun <T> deserializeOption(s: String, parse: (String) -> T): T? = if (s.isEmpty()) null else parse(s)
+
 public fun deserializeUnit(): Unit = Unit
+
 public fun deserializeUnitStruct(name: String): Unit = Unit
+
 @HiddenFromObjC
 public fun <T> deserializeNewtypeStruct(name: String, s: String, parse: (String) -> T): T = parse(s)
+
 public fun deserializeSeq(s: String, delimiter: Char = ','): List<String> = s.split(delimiter)
+
 public fun deserializeTuple(s: String, delimiter: Char = ','): List<String> = s.split(delimiter)
+
 public fun deserializeTupleStruct(name: String, s: String, delimiter: Char = ','): List<String> = s.split(delimiter)
+
 @HiddenFromObjC
 public fun deserializeMap(pairs: List<Pair<String, String>>): Map<String, String> = pairs.toMap()
+
 public fun deserializeStruct(name: String, fields: Map<String, String>): Map<String, String> = fields
+
 public fun deserializeIdentifier(s: String): String = s
+
 public fun deserializeEnum(s: String): String = s
+
 public fun deserializeIgnoredAny(s: String): Unit = Unit
+
 public fun variantSeed(name: String): String = name
+
 public fun unitVariant(name: String): String = name
+
 public fun newtypeVariantSeed(name: String): String = name
+
 public fun tupleVariant(name: String): String = name
+
 public fun structVariant(name: String): String = name
+
 @HiddenFromObjC
 public fun nextElementSeed(iter: Iterator<String>): String? = if (iter.hasNext()) iter.next() else null
+
 @HiddenFromObjC
 public fun nextKeySeed(iter: Iterator<String>): String? = if (iter.hasNext()) iter.next() else null
+
 @HiddenFromObjC
 public fun nextValueSeed(iter: Iterator<String>): String? = if (iter.hasNext()) iter.next() else null
+
 public fun custom(msg: String): DeserializeError = DeserializeError(null, DeserializeErrorKind.Message(msg))
+
 public fun fmt(err: DeserializeError): String = err.toString()
-
-
-

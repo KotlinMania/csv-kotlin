@@ -441,6 +441,8 @@ public class Reader internal constructor(
         public fun fromPath(path: String): Reader =
             ReaderBuilder.new().fromPath(path)
 
+        public typealias Item = Result<StringRecord>
+
         private fun isAsciiWhitespace(b: Byte): Boolean {
             val ub = b.toInt() and 0xFF
             return ub == 0x20 || ub == 0x09 || ub == 0x0A || ub == 0x0D || ub == 0x0C || ub == 0x0B
@@ -612,14 +614,14 @@ public class DeserializeRecordsIntoIter<D> internal constructor(
 }
 
 /**
- * Internal testing helper to create string from byte array.
+ * Testing helper to create string from byte array.
  */
-internal fun s(b: ByteArray): String = b.decodeToString()
+public fun s(b: ByteArray): String = b.decodeToString()
 
 /**
- * Internal testing helper to create Position.
+ * Testing helper to create Position.
  */
-internal fun newpos(byte: ULong, line: ULong, record: ULong): Position = Position(byte, line, record)
+public fun newpos(byte: ULong, line: ULong, record: ULong): Position = Position(byte, line, record)
 
 internal enum class ReaderState {
     Start,

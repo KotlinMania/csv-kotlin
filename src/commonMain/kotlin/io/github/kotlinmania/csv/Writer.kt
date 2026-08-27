@@ -462,3 +462,10 @@ internal class Buffer(
     val buf: MutableList<Byte> = ArrayList(),
     var len: Int = 0,
 )
+
+public fun wtrAsString(wtr: Writer): String = wtr.asString()
+
+public fun intoString(wtr: Writer): Result<String> = wtr.intoString()
+
+public fun write(wtr: Writer, bytes: ByteArray): Result<Unit> = wtr.write(bytes)
+

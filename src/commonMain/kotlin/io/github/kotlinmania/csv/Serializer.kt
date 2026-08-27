@@ -60,6 +60,27 @@ public inline fun <reified T> serializeHeader(
 ): Result<Boolean> = serializeHeader(writer, kotlinx.serialization.serializer(), value)
 
 /**
+ * Serialize the given value to the given writer, returning any serialization error.
+ */
+@HiddenFromObjC
+public fun <T> serializeErr(
+    writer: Writer,
+    serializer: SerializationStrategy<T>,
+    value: T,
+): Result<Unit> = serialize(writer, serializer, value)
+
+/**
+ * Write header names corresponding to the field names of the value, returning any serialization error.
+ */
+@HiddenFromObjC
+public fun <T> serializeHeaderErr(
+    writer: Writer,
+    serializer: SerializationStrategy<T>,
+    value: T,
+): Result<Boolean> = serializeHeader(writer, serializer, value)
+
+
+/**
  * Serializes values into CSV records using kotlinx.serialization.
  */
 @HiddenFromObjC
@@ -508,3 +529,8 @@ internal class CsvRecordEncoder(
         writer.writeField("")
     }
 }
+
+public typealias SerializerOk = Unit
+public typealias SerializerError = CsvError
+
+

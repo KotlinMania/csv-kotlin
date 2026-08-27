@@ -430,6 +430,10 @@ public class ByteRecord : Iterable<ByteArray> {
             return rec
         }
 
+        public typealias Output = ByteRecord
+        public typealias IntoIter = Iterator<ByteArray>
+        public typealias Item = ByteArray
+
         public fun fromIter(iter: Iterable<ByteArray>): ByteRecord = from(iter.toList())
 
         public fun fromStrings(fields: List<String>): ByteRecord {
@@ -598,7 +602,7 @@ public class Position(
     }
 }
 
-internal fun b(s: String): ByteArray = s.encodeToByteArray()
+public fun b(s: String): ByteArray = s.encodeToByteArray()
 
 public typealias ByteRecordOutput = ByteRecord
 public typealias ByteRecordIntoIter = Iterator<ByteArray>

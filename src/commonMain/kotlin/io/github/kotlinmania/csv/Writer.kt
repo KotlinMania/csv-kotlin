@@ -443,7 +443,7 @@ public class Writer internal constructor(
     }
 }
 
-internal enum class HeaderState {
+internal enum class WriterHeaderState {
     WRITE,
     DID_WRITE,
     DID_NOT_WRITE,
@@ -451,7 +451,7 @@ internal enum class HeaderState {
 }
 
 internal class WriterState(
-    var header: HeaderState = HeaderState.NONE,
+    var header: WriterHeaderState = WriterHeaderState.NONE,
     var flexible: Boolean = false,
     var firstFieldCount: ULong? = null,
     var fieldsWritten: ULong = 0uL,

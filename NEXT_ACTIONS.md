@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 11/11 (100.0%)
-- **Function parity:** 414/426 matched (target 698) — 97.2%
-- **Class/type parity:** 70/74 matched (target 139) — 94.6%
-- **Combined symbol parity:** 484/500 matched (target 837) — 96.8%
+- **Function parity:** 414/426 matched (target 700) — 97.2%
+- **Class/type parity:** 71/74 matched (target 141) — 95.9%
+- **Combined symbol parity:** 485/500 matched (target 841) — 97.0%
 - **Average inline-code cosine:** 0.50 (function body across 9 matched files)
 - **Average documentation cosine:** 0.53 (doc text across 9 matched files)
 - **Cheat-zeroed Files:** 0
@@ -39,19 +39,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Tests:** 9/9 matched
 
-### 2. serializer
-
-- **Target:** `csv.Serializer`
-- **Similarity:** 0.57
-- **Dependents:** 0
-- **Priority Score:** 59304.3
-- **Functions:** 74/76 matched (target 140)
-- **Missing functions:** `serialize_err`, `serialize_header_err`
-- **Types:** 14/17 matched (target 31)
-- **Missing types:** `Ok`, `Error`, `HeaderState`
-- **Tests:** 30/32 matched
-
-### 3. deserializer
+### 2. deserializer
 
 - **Target:** `csv.Deserializer`
 - **Similarity:** 0.44
@@ -63,7 +51,31 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** `Error`
 - **Tests:** 36/39 matched
 
-### 4. reader
+### 3. writer
+
+- **Target:** `csv.Writer`
+- **Similarity:** 0.58
+- **Dependents:** 0
+- **Priority Score:** 46004.2
+- **Functions:** 50/53 matched (target 84)
+- **Missing functions:** `wtr_as_string`, `into_string`, `write`
+- **Types:** 6/7 matched (target 9)
+- **Missing types:** `HeaderState`
+- **Tests:** 18/21 matched
+
+### 4. serializer
+
+- **Target:** `csv.Serializer`
+- **Similarity:** 0.57
+- **Dependents:** 0
+- **Priority Score:** 39304.3
+- **Functions:** 74/76 matched (target 142)
+- **Missing functions:** `serialize_err`, `serialize_header_err`
+- **Types:** 16/17 matched (target 33)
+- **Missing types:** `Error`
+- **Tests:** 30/32 matched
+
+### 5. reader
 
 - **Target:** `csv.Reader`
 - **Similarity:** 0.61
@@ -74,18 +86,6 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 12/12 matched (target 14)
 - **Missing types:** _none_
 - **Tests:** 20/23 matched
-
-### 5. writer
-
-- **Target:** `csv.Writer`
-- **Similarity:** 0.58
-- **Dependents:** 0
-- **Priority Score:** 36004.2
-- **Functions:** 50/53 matched (target 84)
-- **Missing functions:** `wtr_as_string`, `into_string`, `write`
-- **Types:** 7/7 matched (target 9)
-- **Missing types:** _none_
-- **Tests:** 18/21 matched
 
 ### 6. byte_record
 

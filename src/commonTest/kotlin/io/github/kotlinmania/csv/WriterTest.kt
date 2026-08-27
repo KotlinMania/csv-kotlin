@@ -203,4 +203,8 @@ class WriterTest {
         wtr.serializeTuple(listOf(true, 1.3, "hi")).getOrThrow()
         assertEquals("true,1.3,hi\n", wtr.asString())
     }
+
+    private fun wtrAsString(wtr: Writer): String = wtr.asString()
 }
+
+

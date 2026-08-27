@@ -530,7 +530,30 @@ internal class CsvRecordEncoder(
     }
 }
 
+public typealias Ok = Unit
 public typealias SerializerOk = Unit
 public typealias SerializerError = CsvError
+
+public sealed interface HeaderState {
+    public data object Write : HeaderState
+    public data class ErrorIfWrite(public val error: CsvError) : HeaderState
+    public data object EncounteredStructField : HeaderState
+    public data object InStructField : HeaderState
+}
+
+@HiddenFromObjC
+public inline fun <reified T> serializeErr(value: T): CsvError {
+    val wtr = WriterBuilder.new().fromWriter()
+    val res = CsvSerializer.serialize(wtr, kotlinx.serialization.serializer(), value)
+    return res.exceptionOrNull() as? CsvError ?: CsvError(ErrorKind.Serialize("expected error"))
+}
+
+@HiddenFromObjC
+public inline fun <reified T> serializeHeaderErr(value: T): CsvError {
+    val wtr = WriterBuilder.new().fromWriter()
+    val res = serializeHeader(wtr, value)
+    return res.exceptionOrNull() as? CsvError ?: CsvError(ErrorKind.Serialize("expected error"))
+}
+
 
 

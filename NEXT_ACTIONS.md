@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 11/11 (100.0%)
-- **Function parity:** 382/426 matched (target 660) — 89.7%
+- **Function parity:** 382/426 matched (target 661) — 89.7%
 - **Class/type parity:** 60/74 matched (target 126) — 81.1%
-- **Combined symbol parity:** 442/500 matched (target 786) — 88.4%
+- **Combined symbol parity:** 442/500 matched (target 787) — 88.4%
 - **Average inline-code cosine:** 0.49 (function body across 9 matched files)
 - **Average documentation cosine:** 0.53 (doc text across 9 matched files)
 - **Cheat-zeroed Files:** 0
@@ -90,10 +90,10 @@ Every matched file is listed below with function and type symbol parity.
 ### 6. writer
 
 - **Target:** `csv.Writer`
-- **Similarity:** 0.57
+- **Similarity:** 0.58
 - **Dependents:** 0
-- **Priority Score:** 36004.3
-- **Functions:** 50/53 matched (target 80)
+- **Priority Score:** 36004.2
+- **Functions:** 50/53 matched (target 81)
 - **Missing functions:** `wtr_as_string`, `into_string`, `write`
 - **Types:** 7/7 matched (target 9)
 - **Missing types:** _none_

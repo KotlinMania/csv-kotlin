@@ -533,6 +533,8 @@ public typealias Ok = Unit
 public typealias SerializerOk = Unit
 public typealias SerializerError = CsvError
 
+
+
 public sealed interface HeaderState {
     public data object Write : HeaderState
 

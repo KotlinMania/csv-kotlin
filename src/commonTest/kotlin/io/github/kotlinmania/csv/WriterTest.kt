@@ -108,6 +108,19 @@ class WriterTest {
         val buffer: MutableList<Byte> = mutableListOf(),
     ) {
         fun intoString(): String = buffer.toByteArray().decodeToString()
+
+        fun write(data: ByteArray): Int {
+            buffer.add('>'.code.toByte())
+            for (b in data) {
+                buffer.add(b)
+            }
+            buffer.add('<'.code.toByte())
+            return data.size
+        }
+
+        fun flush() {
+            buffer.add('!'.code.toByte())
+        }
     }
 
     @Test

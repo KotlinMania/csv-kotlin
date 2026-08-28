@@ -441,17 +441,24 @@ public class Writer internal constructor(
 
         public fun fromWriter(): Writer = WriterBuilder.new().fromWriter()
     }
-}
 
-internal enum class WriterHeaderState {
-    WRITE,
-    DID_WRITE,
-    DID_NOT_WRITE,
-    NONE,
+    internal enum class HeaderState {
+        Write,
+        DidWrite,
+        DidNotWrite,
+        None;
+
+        companion object {
+            fun write(): HeaderState = Write
+            fun didWrite(): HeaderState = DidWrite
+            fun didNotWrite(): HeaderState = DidNotWrite
+            fun none(): HeaderState = None
+        }
+    }
 }
 
 internal class WriterState(
-    var header: WriterHeaderState = WriterHeaderState.NONE,
+    var header: Writer.HeaderState = Writer.HeaderState.None,
     var flexible: Boolean = false,
     var firstFieldCount: ULong? = null,
     var fieldsWritten: ULong = 0uL,

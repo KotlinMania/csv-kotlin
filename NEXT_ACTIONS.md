@@ -5,9 +5,9 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 11/11 (100.0%)
-- **Function parity:** 414/426 matched (target 700) — 97.2%
-- **Class/type parity:** 71/74 matched (target 141) — 95.9%
-- **Combined symbol parity:** 485/500 matched (target 841) — 97.0%
+- **Function parity:** 414/426 matched (target 705) — 97.2%
+- **Class/type parity:** 74/74 matched (target 144) — 100.0%
+- **Combined symbol parity:** 488/500 matched (target 849) — 97.6%
 - **Average inline-code cosine:** 0.50 (function body across 9 matched files)
 - **Average documentation cosine:** 0.53 (doc text across 9 matched files)
 - **Cheat-zeroed Files:** 0
@@ -44,48 +44,48 @@ Every matched file is listed below with function and type symbol parity.
 - **Target:** `csv.Deserializer`
 - **Similarity:** 0.44
 - **Dependents:** 0
-- **Priority Score:** 50805.6
-- **Functions:** 90/93 matched (target 131)
+- **Priority Score:** 40805.6
+- **Functions:** 90/93 matched (target 135)
 - **Missing functions:** `de`, `de_headers`, `b`
-- **Types:** 14/15 matched (target 38)
-- **Missing types:** `Error`
+- **Types:** 15/15 matched (target 39)
+- **Missing types:** _none_
 - **Tests:** 36/39 matched
 
-### 3. writer
-
-- **Target:** `csv.Writer`
-- **Similarity:** 0.58
-- **Dependents:** 0
-- **Priority Score:** 46004.2
-- **Functions:** 50/53 matched (target 84)
-- **Missing functions:** `wtr_as_string`, `into_string`, `write`
-- **Types:** 6/7 matched (target 9)
-- **Missing types:** `HeaderState`
-- **Tests:** 18/21 matched
-
-### 4. serializer
-
-- **Target:** `csv.Serializer`
-- **Similarity:** 0.57
-- **Dependents:** 0
-- **Priority Score:** 39304.3
-- **Functions:** 74/76 matched (target 142)
-- **Missing functions:** `serialize_err`, `serialize_header_err`
-- **Types:** 16/17 matched (target 33)
-- **Missing types:** `Error`
-- **Tests:** 30/32 matched
-
-### 5. reader
+### 3. reader
 
 - **Target:** `csv.Reader`
 - **Similarity:** 0.61
 - **Dependents:** 0
 - **Priority Score:** 37803.9
-- **Functions:** 63/66 matched (target 118)
+- **Functions:** 63/66 matched (target 119)
 - **Missing functions:** `b`, `s`, `newpos`
 - **Types:** 12/12 matched (target 14)
 - **Missing types:** _none_
 - **Tests:** 20/23 matched
+
+### 4. writer
+
+- **Target:** `csv.Writer`
+- **Similarity:** 0.58
+- **Dependents:** 0
+- **Priority Score:** 36004.2
+- **Functions:** 50/53 matched (target 84)
+- **Missing functions:** `wtr_as_string`, `into_string`, `write`
+- **Types:** 7/7 matched (target 10)
+- **Missing types:** _none_
+- **Tests:** 18/21 matched
+
+### 5. serializer
+
+- **Target:** `csv.Serializer`
+- **Similarity:** 0.57
+- **Dependents:** 0
+- **Priority Score:** 29304.3
+- **Functions:** 74/76 matched (target 142)
+- **Missing functions:** `serialize_err`, `serialize_header_err`
+- **Types:** 17/17 matched (target 34)
+- **Missing types:** _none_
+- **Tests:** 30/32 matched
 
 ### 6. byte_record
 

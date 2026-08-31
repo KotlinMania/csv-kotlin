@@ -1,4 +1,4 @@
-// port-lint: source csv/src/serializer.rs
+// port-lint: source serializer.rs
 @file:OptIn(kotlin.experimental.ExperimentalObjCRefinement::class)
 
 package io.github.kotlinmania.csv

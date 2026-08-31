@@ -1,4 +1,4 @@
-// port-lint: source csv/src/reader.rs
+// port-lint: source reader.rs
 package io.github.kotlinmania.csv
 
 /**

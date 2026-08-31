@@ -4,13 +4,13 @@ Based on AST analysis, here are the concrete next steps.
 
 ## Summary
 
-- **Files Present:** 11/49 (22.4%)
-- **Function parity:** 414/561 matched (target 706) — 73.8%
-- **Class/type parity:** 72/97 matched (target 141) — 74.2%
-- **Combined symbol parity:** 486/658 matched (target 847) — 73.9%
-- **Average inline-code cosine:** 0.52 (function body across 8 matched files)
-- **Average documentation cosine:** 0.52 (doc text across 8 matched files)
-- **Cheat-zeroed Files:** 1
+- **Files Present:** 11/11 (100.0%)
+- **Function parity:** 414/426 matched (target 706) — 97.2%
+- **Class/type parity:** 72/74 matched (target 141) — 97.3%
+- **Combined symbol parity:** 486/500 matched (target 847) — 97.2%
+- **Average inline-code cosine:** 0.50 (function body across 9 matched files)
+- **Average documentation cosine:** 0.53 (doc text across 9 matched files)
+- **Cheat-zeroed Files:** 0
 - **Critical Issues:** 10 files with <0.60 function similarity
 
 ## Priority 1: Fix Incomplete High-Dependency Files
@@ -27,19 +27,7 @@ No missing high-value files detected.
 
 Every matched file is listed below with function and type symbol parity.
 
-### 1. csv.reader
-
-- **Target:** `csv.Reader`
-- **Similarity:** 0.61
-- **Dependents:** 1
-- **Priority Score:** 1037803.9
-- **Functions:** 63/66 matched (target 118)
-- **Missing functions:** `b`, `s`, `newpos`
-- **Types:** 12/12 matched (target 14)
-- **Missing types:** _none_
-- **Tests:** 20/23 matched
-
-### 2. csv.string_record
+### 1. string_record
 
 - **Target:** `csv.StringRecord`
 - **Similarity:** 0.55
@@ -51,7 +39,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Tests:** 9/9 matched
 
-### 3. csv.deserializer
+### 2. deserializer
 
 - **Target:** `csv.Deserializer`
 - **Similarity:** 0.44
@@ -63,7 +51,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** `Error`
 - **Tests:** 36/39 matched
 
-### 4. csv.serializer
+### 3. serializer
 
 - **Target:** `csv.Serializer`
 - **Similarity:** 0.57
@@ -75,7 +63,19 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** `Error`
 - **Tests:** 30/32 matched
 
-### 5. csv.writer
+### 4. reader
+
+- **Target:** `csv.Reader`
+- **Similarity:** 0.61
+- **Dependents:** 0
+- **Priority Score:** 37803.9
+- **Functions:** 63/66 matched (target 118)
+- **Missing functions:** `b`, `s`, `newpos`
+- **Types:** 12/12 matched (target 14)
+- **Missing types:** _none_
+- **Tests:** 20/23 matched
+
+### 5. writer
 
 - **Target:** `csv.Writer`
 - **Similarity:** 0.59
@@ -87,7 +87,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Tests:** 18/21 matched
 
-### 6. csv.byte_record
+### 6. byte_record
 
 - **Target:** `csv.ByteRecord`
 - **Similarity:** 0.52
@@ -99,7 +99,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Missing types:** _none_
 - **Tests:** 25/26 matched
 
-### 7. csv.error
+### 7. error
 
 - **Target:** `csv.Error`
 - **Similarity:** 0.45
@@ -110,18 +110,18 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 6/6 matched (target 14)
 - **Missing types:** _none_
 
-### 8. csv.lib
+### 8. lib
 
-- **Target:** `csv.Lib [STUB]`
-- **Similarity:** 0.00
+- **Target:** `csv.Lib`
+- **Similarity:** 0.34
 - **Dependents:** 0
-- **Priority Score:** 710.0
+- **Priority Score:** 706.6
 - **Functions:** 4/4 matched (target 7)
 - **Missing functions:** _none_
 - **Types:** 3/3 matched (target 5)
 - **Missing types:** _none_
 
-### 9. csv.debug
+### 9. debug
 
 - **Target:** `csv.Debug`
 - **Similarity:** 0.45
@@ -132,7 +132,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 1/1 matched (target 5)
 - **Missing types:** _none_
 
-### 10. csv.cookbook
+### 10. cookbook
 
 - **Target:** `csv.Cookbook [STUB]`
 - **Similarity:** 1.00
@@ -143,7 +143,7 @@ Every matched file is listed below with function and type symbol parity.
 - **Types:** 0/0 matched (target 1)
 - **Missing types:** _none_
 
-### 11. csv.tutorial
+### 11. tutorial
 
 - **Target:** `csv.Tutorial [STUB]`
 - **Similarity:** 1.00

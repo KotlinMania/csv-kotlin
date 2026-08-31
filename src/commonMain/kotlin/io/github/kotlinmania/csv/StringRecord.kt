@@ -1,4 +1,4 @@
-// port-lint: source string_record.rs
+// port-lint: source csv/src/string_record.rs
 package io.github.kotlinmania.csv
 
 /**

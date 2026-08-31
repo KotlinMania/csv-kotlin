@@ -1,4 +1,4 @@
-// port-lint: tests csv/tests/tests.rs
+// port-lint: tests ../tests/tests.rs
 package io.github.kotlinmania.csv
 
 import kotlin.test.Test

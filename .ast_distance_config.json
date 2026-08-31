@@ -2,7 +2,7 @@
   "type": "port",
   "name": "csv-kotlin",
   "source": {
-    "path": "tmp/csv/src",
+    "path": "tmp",
     "lang": "rust"
   },
   "target": {

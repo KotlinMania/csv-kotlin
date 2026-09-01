@@ -9,4 +9,3 @@ package io.github.kotlinmania.csv
  * CSV transformations, and performance.
  */
 public object Tutorial
-

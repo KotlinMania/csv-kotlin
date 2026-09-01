@@ -618,8 +618,6 @@ public class DeserializeRecordsIntoIter<D> internal constructor(
  */
 public fun s(b: ByteArray): String = b.decodeToString()
 
-
-
 /**
  * Testing helper to create Position.
  */

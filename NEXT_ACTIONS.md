@@ -5,12 +5,12 @@ Based on AST analysis, here are the concrete next steps.
 ## Summary
 
 - **Files Present:** 11/11 (100.0%)
-- **Function parity:** 414/426 matched (target 717) — 97.2%
-- **Class/type parity:** 72/74 matched (target 143) — 97.3%
-- **Combined symbol parity:** 486/500 matched (target 860) — 97.2%
-- **Average inline-code cosine:** 0.41 (function body across 11 matched files)
-- **Average documentation cosine:** 0.43 (doc text across 11 matched files)
-- **Cheat-zeroed Files:** 2
+- **Function parity:** 414/426 matched (target 704) — 97.2%
+- **Class/type parity:** 72/74 matched (target 141) — 97.3%
+- **Combined symbol parity:** 486/500 matched (target 845) — 97.2%
+- **Average inline-code cosine:** 0.50 (function body across 9 matched files)
+- **Average documentation cosine:** 0.53 (doc text across 9 matched files)
+- **Cheat-zeroed Files:** 0
 - **Critical Issues:** 10 files with <0.60 function similarity
 
 ## Priority 1: Fix Incomplete High-Dependency Files
@@ -134,24 +134,24 @@ Every matched file is listed below with function and type symbol parity.
 
 ### 10. cookbook
 
-- **Target:** `csv.Cookbook [ZERO]`
-- **Similarity:** 0.00
+- **Target:** `csv.Cookbook [STUB]`
+- **Similarity:** 1.00
 - **Dependents:** 0
-- **Priority Score:** 10.0
-- **Functions:** 0/0 matched (target 6)
+- **Priority Score:** 0.0
+- **Functions:** 0/0 matched
 - **Missing functions:** _none_
-- **Types:** 0/0 matched (target 2)
+- **Types:** 0/0 matched (target 1)
 - **Missing types:** _none_
 
 ### 11. tutorial
 
-- **Target:** `csv.Tutorial [ZERO]`
-- **Similarity:** 0.00
+- **Target:** `csv.Tutorial [STUB]`
+- **Similarity:** 1.00
 - **Dependents:** 0
-- **Priority Score:** 10.0
-- **Functions:** 0/0 matched (target 7)
+- **Priority Score:** 0.0
+- **Functions:** 0/0 matched
 - **Missing functions:** _none_
-- **Types:** 0/0 matched (target 2)
+- **Types:** 0/0 matched (target 1)
 - **Missing types:** _none_
 
 ## Success Criteria

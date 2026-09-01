@@ -1,5 +1,9 @@
-// port-lint: source csv/src/writer.rs
+// port-lint: source writer.rs
+@file:OptIn(kotlin.experimental.ExperimentalObjCRefinement::class)
+
 package io.github.kotlinmania.csv
+
+import kotlin.native.HiddenFromObjC
 
 /**
  * Builds a CSV writer with various configuration knobs.
@@ -472,8 +476,22 @@ internal class Buffer(
 
 public fun wtrAsString(wtr: Writer): String = wtr.asString()
 
-public fun intoString(wtr: Writer): Result<String> = wtr.intoString()
+@HiddenFromObjC
+public class MarkWriteAndFlush {
+    private val inner: MutableList<Byte> = mutableListOf()
 
-public fun write(wtr: Writer, bytes: ByteArray): Result<Unit> = wtr.write(bytes)
+    public fun intoString(): String = inner.toByteArray().decodeToString()
+
+    public fun write(data: ByteArray): Int {
+        inner.add('>'.code.toByte())
+        inner.addAll(data.toList())
+        inner.add('<'.code.toByte())
+        return data.size
+    }
+
+    public fun flush() {
+        inner.add('!'.code.toByte())
+    }
+}
 
 

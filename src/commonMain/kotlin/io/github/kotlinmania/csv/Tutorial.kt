@@ -1,10 +1,12 @@
-// port-lint: source csv/src/tutorial.rs
+// port-lint: source tutorial.rs
 package io.github.kotlinmania.csv
 
 /**
- * A tutorial guide for handling CSV data in Kotlin Multiplatform.
+ * A tutorial for handling CSV data in Kotlin Multiplatform.
  *
- * Covers basic reading and writing, automatic serialization and deserialization,
- * error handling, and performance considerations.
+ * This tutorial covers basic CSV reading and writing, automatic
+ * serialization and deserialization with kotlinx.serialization,
+ * CSV transformations, and performance.
  */
 public object Tutorial
+

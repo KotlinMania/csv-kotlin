@@ -1,4 +1,4 @@
-// port-lint: tests csv/src/byte_record.rs
+// port-lint: tests byte_record.rs
 package io.github.kotlinmania.csv
 
 import kotlin.test.Test
@@ -8,7 +8,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ByteRecordTest {
-    private fun b(s: String): ByteArray = s.encodeToByteArray()
 
     @Test
     fun record1() {

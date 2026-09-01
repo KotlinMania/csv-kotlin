@@ -450,12 +450,16 @@ public class Writer internal constructor(
         Write,
         DidWrite,
         DidNotWrite,
-        None;
+        None,
+        ;
 
         companion object {
             fun write(): HeaderState = Write
+
             fun didWrite(): HeaderState = DidWrite
+
             fun didNotWrite(): HeaderState = DidNotWrite
+
             fun none(): HeaderState = None
         }
     }
@@ -493,5 +497,3 @@ public class MarkWriteAndFlush {
         inner.add('!'.code.toByte())
     }
 }
-
-

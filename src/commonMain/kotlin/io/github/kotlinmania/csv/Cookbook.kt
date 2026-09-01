@@ -17,4 +17,3 @@ package io.github.kotlinmania.csv
  * 6. Writing with serialization
  */
 public object Cookbook
-

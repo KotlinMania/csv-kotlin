@@ -8,7 +8,6 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class ReaderTest {
-
     @Test
     fun readByteRecord() {
         val data = b("foo,bar,baz\na,b,c\nd,e,f")

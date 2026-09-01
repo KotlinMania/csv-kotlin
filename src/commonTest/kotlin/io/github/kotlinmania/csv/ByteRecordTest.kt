@@ -8,7 +8,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ByteRecordTest {
-
     @Test
     fun record1() {
         val rec = ByteRecord.new()

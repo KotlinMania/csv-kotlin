@@ -362,4 +362,12 @@ class DeserializerTest {
         assertEquals(123UL, tryPositiveInteger128Bytes("123".encodeToByteArray()))
         assertEquals(-123L, tryNegativeInteger128Bytes("-123".encodeToByteArray()))
     }
+
+    private inline fun <reified T> de(fields: List<String>): Result<T> =
+        deserializeStringRecord(StringRecord.from(fields))
+
+    private inline fun <reified T> deHeaders(headers: List<String>, fields: List<String>): Result<T> =
+        deserializeStringRecord(StringRecord.from(fields), StringRecord.from(headers))
+
+    private fun b(bytes: ByteArray): ByteArray = bytes
 }

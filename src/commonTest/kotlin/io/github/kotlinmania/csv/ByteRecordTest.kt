@@ -349,4 +349,6 @@ class ByteRecordTest {
         val trimmedEnd = ByteRecord.trimAsciiEnd(b("   test   "))
         assertEquals("   test", trimmedEnd.decodeToString())
     }
+
+    private fun b(s: String): ByteArray = s.encodeToByteArray()
 }

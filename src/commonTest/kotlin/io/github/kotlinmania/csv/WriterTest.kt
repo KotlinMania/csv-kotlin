@@ -218,4 +218,11 @@ class WriterTest {
     }
 
     private fun wtrAsString(wtr: Writer): String = wtr.asString()
+
+    private fun intoString(wtr: Writer): String = wtr.intoString().getOrThrow()
+
+    private fun write(wtr: Writer, data: ByteArray): Int {
+        wtr.write(data).getOrThrow()
+        return data.size
+    }
 }

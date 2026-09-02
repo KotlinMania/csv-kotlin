@@ -389,4 +389,10 @@ class ReaderTest {
         val rdr3 = Reader.default()
         assertTrue(rdr3.isDone())
     }
+
+    private fun b(s: String): ByteArray = s.encodeToByteArray()
+
+    private fun s(b: ByteArray): String = b.decodeToString()
+
+    private fun newpos(byte: ULong, line: ULong, record: ULong): Position = Position(byte, line, record)
 }

@@ -83,27 +83,261 @@ class IntegrationTest {
         }
     }
 
-    @kotlinx.serialization.Serializable
     private data class PopRecord(
         val city: String,
         val region: String,
         val country: String,
         val population: Long? = null,
-    )
+    ) : io.github.kotlinmania.serdecore.ser.Serialize {
+        override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>): io.github.kotlinmania.serde.SerdeResult<Ok> {
+            val st =
+                serializer.serializeStruct("PopRecord", 4).getOrElse {
+                    return io.github.kotlinmania.serde.SerdeResult
+                        .failure(it)
+                }
+            st
+                .serializeField(
+                    "city",
+                    object : io.github.kotlinmania.serdecore.ser.Serialize {
+                        override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>) = serializer.serializeStr(city)
+                    },
+                ).getOrElse {
+                    return io.github.kotlinmania.serde.SerdeResult
+                        .failure(it)
+                }
+            st
+                .serializeField(
+                    "region",
+                    object : io.github.kotlinmania.serdecore.ser.Serialize {
+                        override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>) = serializer.serializeStr(region)
+                    },
+                ).getOrElse {
+                    return io.github.kotlinmania.serde.SerdeResult
+                        .failure(it)
+                }
+            st
+                .serializeField(
+                    "country",
+                    object : io.github.kotlinmania.serdecore.ser.Serialize {
+                        override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>) = serializer.serializeStr(country)
+                    },
+                ).getOrElse {
+                    return io.github.kotlinmania.serde.SerdeResult
+                        .failure(it)
+                }
+            val pop = population
+            if (pop != null) {
+                st
+                    .serializeField(
+                        "population",
+                        object : io.github.kotlinmania.serdecore.ser.Serialize {
+                            override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>) = serializer.serializeI64(pop)
+                        },
+                    ).getOrElse {
+                        return io.github.kotlinmania.serde.SerdeResult
+                            .failure(it)
+                    }
+            } else {
+                st
+                    .serializeField(
+                        "population",
+                        object : io.github.kotlinmania.serdecore.ser.Serialize {
+                            override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>) = serializer.serializeNone()
+                        },
+                    ).getOrElse {
+                        return io.github.kotlinmania.serde.SerdeResult
+                            .failure(it)
+                    }
+            }
+            return st.end()
+        }
 
-    @kotlinx.serialization.Serializable
+        companion object : io.github.kotlinmania.serdecore.de.Deserialize<PopRecord> {
+            override fun <D : io.github.kotlinmania.serdecore.de.Deserializer> deserialize(deserializer: D): io.github.kotlinmania.serde.SerdeResult<PopRecord> {
+                return deserializer.deserializeStruct(
+                    "PopRecord",
+                    listOf("city", "region", "country", "population"),
+                    object : io.github.kotlinmania.serdecore.de.Visitor<PopRecord> {
+                        override fun expecting(): String = "struct PopRecord"
+
+                        override fun <M : io.github.kotlinmania.serdecore.de.MapAccess> visitMap(access: M): io.github.kotlinmania.serde.SerdeResult<PopRecord> {
+                            var city: String? = null
+                            var region: String? = null
+                            var country: String? = null
+                            var population: Long? = null
+                            while (true) {
+                                val key =
+                                    access.nextKey(io.github.kotlinmania.serdecore.de.StringDeserialize).getOrElse {
+                                        return io.github.kotlinmania.serde.SerdeResult
+                                            .failure(it)
+                                    } ?: break
+                                when (key) {
+                                    "city" ->
+                                        city =
+                                            access.nextValue(io.github.kotlinmania.serdecore.de.StringDeserialize).getOrElse {
+                                                return io.github.kotlinmania.serde.SerdeResult
+                                                    .failure(it)
+                                            }
+                                    "region" ->
+                                        region =
+                                            access.nextValue(io.github.kotlinmania.serdecore.de.StringDeserialize).getOrElse {
+                                                return io.github.kotlinmania.serde.SerdeResult
+                                                    .failure(it)
+                                            }
+                                    "country" ->
+                                        country =
+                                            access.nextValue(io.github.kotlinmania.serdecore.de.StringDeserialize).getOrElse {
+                                                return io.github.kotlinmania.serde.SerdeResult
+                                                    .failure(it)
+                                            }
+                                    "population" -> {
+                                        val popStr =
+                                            access.nextValue(io.github.kotlinmania.serdecore.de.StringDeserialize).getOrElse {
+                                                return io.github.kotlinmania.serde.SerdeResult
+                                                    .failure(it)
+                                            }
+                                        if (popStr.isEmpty()) {
+                                            population = null
+                                        } else {
+                                            val p =
+                                                popStr.toLongOrNull()
+                                                    ?: return io.github.kotlinmania.serde.SerdeResult
+                                                        .failure(
+                                                            io.github.kotlinmania.serde.SerdeError
+                                                                .custom("invalid integer"),
+                                                        )
+                                            population = p
+                                        }
+                                    }
+                                    else ->
+                                        access.nextValue(io.github.kotlinmania.serdecore.de.IgnoredAny).getOrElse {
+                                            return io.github.kotlinmania.serde.SerdeResult
+                                                .failure(it)
+                                        }
+                                }
+                            }
+                            return io.github.kotlinmania.serde.SerdeResult
+                                .success(PopRecord(city ?: "", region ?: "", country ?: "", population))
+                        }
+                    },
+                )
+            }
+        }
+    }
+
     private data class CityPopRecord(
         val city: String,
         val state: String,
         val population: Long? = null,
         val latitude: Double? = null,
         val longitude: Double? = null,
-    )
+    ) : io.github.kotlinmania.serdecore.ser.Serialize {
+        override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>): io.github.kotlinmania.serde.SerdeResult<Ok> {
+            val st =
+                serializer.serializeStruct("CityPopRecord", 5).getOrElse {
+                    return io.github.kotlinmania.serde.SerdeResult
+                        .failure(it)
+                }
+            st
+                .serializeField(
+                    "city",
+                    object : io.github.kotlinmania.serdecore.ser.Serialize {
+                        override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>) = serializer.serializeStr(city)
+                    },
+                ).getOrElse {
+                    return io.github.kotlinmania.serde.SerdeResult
+                        .failure(it)
+                }
+            st
+                .serializeField(
+                    "state",
+                    object : io.github.kotlinmania.serdecore.ser.Serialize {
+                        override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>) = serializer.serializeStr(state)
+                    },
+                ).getOrElse {
+                    return io.github.kotlinmania.serde.SerdeResult
+                        .failure(it)
+                }
+            val pop = population
+            if (pop != null) {
+                st
+                    .serializeField(
+                        "population",
+                        object : io.github.kotlinmania.serdecore.ser.Serialize {
+                            override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>) = serializer.serializeI64(pop)
+                        },
+                    ).getOrElse {
+                        return io.github.kotlinmania.serde.SerdeResult
+                            .failure(it)
+                    }
+            } else {
+                st
+                    .serializeField(
+                        "population",
+                        object : io.github.kotlinmania.serdecore.ser.Serialize {
+                            override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>) = serializer.serializeNone()
+                        },
+                    ).getOrElse {
+                        return io.github.kotlinmania.serde.SerdeResult
+                            .failure(it)
+                    }
+            }
+            val lat = latitude
+            if (lat != null) {
+                st
+                    .serializeField(
+                        "latitude",
+                        object : io.github.kotlinmania.serdecore.ser.Serialize {
+                            override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>) = serializer.serializeF64(lat)
+                        },
+                    ).getOrElse {
+                        return io.github.kotlinmania.serde.SerdeResult
+                            .failure(it)
+                    }
+            } else {
+                st
+                    .serializeField(
+                        "latitude",
+                        object : io.github.kotlinmania.serdecore.ser.Serialize {
+                            override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>) = serializer.serializeNone()
+                        },
+                    ).getOrElse {
+                        return io.github.kotlinmania.serde.SerdeResult
+                            .failure(it)
+                    }
+            }
+            val lon = longitude
+            if (lon != null) {
+                st
+                    .serializeField(
+                        "longitude",
+                        object : io.github.kotlinmania.serdecore.ser.Serialize {
+                            override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>) = serializer.serializeF64(lon)
+                        },
+                    ).getOrElse {
+                        return io.github.kotlinmania.serde.SerdeResult
+                            .failure(it)
+                    }
+            } else {
+                st
+                    .serializeField(
+                        "longitude",
+                        object : io.github.kotlinmania.serdecore.ser.Serialize {
+                            override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>) = serializer.serializeNone()
+                        },
+                    ).getOrElse {
+                        return io.github.kotlinmania.serde.SerdeResult
+                            .failure(it)
+                    }
+            }
+            return st.end()
+        }
+    }
 
     @Test
     fun cookbookReadSerde() {
         val rdr = Reader.fromString(smallpop)
-        val records = rdr.deserialize<PopRecord>().toList()
+        val records = rdr.deserialize(PopRecord).toList()
         assertEquals(10, records.size)
         for (rec in records) {
             assertTrue(rec.isSuccess)
@@ -247,7 +481,7 @@ class IntegrationTest {
     @Test
     fun tutorialReadSerde01() {
         val rdr = Reader.fromString(smallpop)
-        val records = rdr.deserialize<PopRecord>().toList()
+        val records = rdr.deserialize(PopRecord).toList()
         assertEquals(10, records.size)
         assertTrue(records.all { it.isSuccess && it.getOrThrow().population != null })
     }
@@ -262,7 +496,7 @@ class IntegrationTest {
     @Test
     fun tutorialReadSerde03() {
         val rdr = Reader.fromString(smallpop)
-        val records = rdr.deserialize<PopRecord>().toList()
+        val records = rdr.deserialize(PopRecord).toList()
         assertEquals(10, records.size)
         assertEquals("Southborough", records[0].getOrThrow().city)
     }
@@ -270,7 +504,7 @@ class IntegrationTest {
     @Test
     fun tutorialReadSerde04() {
         val rdr = Reader.fromString(smallpop)
-        val records = rdr.deserialize<PopRecord>().toList()
+        val records = rdr.deserialize(PopRecord).toList()
         assertEquals(10, records.size)
         assertEquals(9686L, records[0].getOrThrow().population)
     }
@@ -279,7 +513,7 @@ class IntegrationTest {
     fun tutorialReadSerde05Invalid() {
         val data = "city,region,country,population\nBoston,MA,USA,not_a_number\n"
         val rdr = Reader.fromString(data)
-        val records = rdr.deserialize<PopRecord>().toList()
+        val records = rdr.deserialize(PopRecord).toList()
         assertTrue(records[0].isFailure)
     }
 
@@ -287,7 +521,7 @@ class IntegrationTest {
     fun tutorialReadSerdeInvalid06() {
         val data = "city,region,country,population\nBoston,MA,USA,\n"
         val rdr = Reader.fromString(data)
-        val records = rdr.deserialize<PopRecord>().toList()
+        val records = rdr.deserialize(PopRecord).toList()
         assertTrue(records[0].isSuccess)
         assertEquals(null, records[0].getOrThrow().population)
     }
@@ -353,7 +587,7 @@ class IntegrationTest {
         val rdr = Reader.fromString(smallpop)
         val matches =
             rdr
-                .deserialize<PopRecord>()
+                .deserialize(PopRecord)
                 .filter { it.isSuccess && (it.getOrThrow().population ?: 0L) > 100000L }
                 .toList()
         assertEquals(3, matches.size)
@@ -391,14 +625,14 @@ class IntegrationTest {
     @Test
     fun tutorialPerfSerde01() {
         val rdr = Reader.fromString(smallpop)
-        val count = rdr.deserialize<PopRecord>().count()
+        val count = rdr.deserialize(PopRecord).count()
         assertEquals(10, count)
     }
 
     @Test
     fun tutorialPerfSerde02() {
         val rdr = Reader.fromString(smallpop)
-        val count = rdr.deserialize<PopRecord>().filter { it.isSuccess }.count()
+        val count = rdr.deserialize(PopRecord).filter { it.isSuccess }.count()
         assertEquals(10, count)
     }
 
@@ -406,7 +640,7 @@ class IntegrationTest {
     fun tutorialPerfSerde03() {
         val rdr = Reader.fromString(smallpop)
         var count = 0
-        for (rec in rdr.deserialize<PopRecord>()) {
+        for (rec in rdr.deserialize(PopRecord)) {
             if (rec.isSuccess) count++
         }
         assertEquals(10, count)

@@ -175,19 +175,137 @@ class WriterTest {
         assertEquals(",", wtr.asString())
     }
 
-    @kotlinx.serialization.Serializable
     private data class Row(
         val foo: Int,
         val bar: Double,
         val baz: Boolean,
-    )
+    ) : io.github.kotlinmania.serdecore.ser.Serialize {
+        override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>): io.github.kotlinmania.serde.SerdeResult<Ok> {
+            val st =
+                serializer.serializeStruct("Row", 3).getOrElse {
+                    return io.github.kotlinmania.serde.SerdeResult
+                        .failure(it)
+                }
+            st
+                .serializeField(
+                    "foo",
+                    object : io.github.kotlinmania.serdecore.ser.Serialize {
+                        override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>) = serializer.serializeI32(foo)
+                    },
+                ).getOrElse {
+                    return io.github.kotlinmania.serde.SerdeResult
+                        .failure(it)
+                }
+            st
+                .serializeField(
+                    "bar",
+                    object : io.github.kotlinmania.serdecore.ser.Serialize {
+                        override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>) = serializer.serializeF64(bar)
+                    },
+                ).getOrElse {
+                    return io.github.kotlinmania.serde.SerdeResult
+                        .failure(it)
+                }
+            st
+                .serializeField(
+                    "baz",
+                    object : io.github.kotlinmania.serdecore.ser.Serialize {
+                        override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>) = serializer.serializeBool(baz)
+                    },
+                ).getOrElse {
+                    return io.github.kotlinmania.serde.SerdeResult
+                        .failure(it)
+                }
+            return st.end()
+        }
+    }
 
-    @kotlinx.serialization.Serializable
     private data class Row128(
         val foo: Long,
         val bar: Double,
         val baz: Boolean,
-    )
+    ) : io.github.kotlinmania.serdecore.ser.Serialize {
+        override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>): io.github.kotlinmania.serde.SerdeResult<Ok> {
+            val st =
+                serializer.serializeStruct("Row128", 3).getOrElse {
+                    return io.github.kotlinmania.serde.SerdeResult
+                        .failure(it)
+                }
+            st
+                .serializeField(
+                    "foo",
+                    object : io.github.kotlinmania.serdecore.ser.Serialize {
+                        override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>) = serializer.serializeI64(foo)
+                    },
+                ).getOrElse {
+                    return io.github.kotlinmania.serde.SerdeResult
+                        .failure(it)
+                }
+            st
+                .serializeField(
+                    "bar",
+                    object : io.github.kotlinmania.serdecore.ser.Serialize {
+                        override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>) = serializer.serializeF64(bar)
+                    },
+                ).getOrElse {
+                    return io.github.kotlinmania.serde.SerdeResult
+                        .failure(it)
+                }
+            st
+                .serializeField(
+                    "baz",
+                    object : io.github.kotlinmania.serdecore.ser.Serialize {
+                        override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>) = serializer.serializeBool(baz)
+                    },
+                ).getOrElse {
+                    return io.github.kotlinmania.serde.SerdeResult
+                        .failure(it)
+                }
+            return st.end()
+        }
+    }
+
+    private data class Tuple3(
+        val a: Boolean,
+        val b: Double,
+        val c: String,
+    ) : io.github.kotlinmania.serdecore.ser.Serialize {
+        override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>): io.github.kotlinmania.serde.SerdeResult<Ok> {
+            val tup =
+                serializer.serializeTuple(3).getOrElse {
+                    return io.github.kotlinmania.serde.SerdeResult
+                        .failure(it)
+                }
+            tup
+                .serializeElement(
+                    object : io.github.kotlinmania.serdecore.ser.Serialize {
+                        override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>) = serializer.serializeBool(a)
+                    },
+                ).getOrElse {
+                    return io.github.kotlinmania.serde.SerdeResult
+                        .failure(it)
+                }
+            tup
+                .serializeElement(
+                    object : io.github.kotlinmania.serdecore.ser.Serialize {
+                        override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>) = serializer.serializeF64(b)
+                    },
+                ).getOrElse {
+                    return io.github.kotlinmania.serde.SerdeResult
+                        .failure(it)
+                }
+            tup
+                .serializeElement(
+                    object : io.github.kotlinmania.serdecore.ser.Serialize {
+                        override fun <Ok> serialize(serializer: io.github.kotlinmania.serdecore.ser.Serializer<Ok>) = serializer.serializeStr(c)
+                    },
+                ).getOrElse {
+                    return io.github.kotlinmania.serde.SerdeResult
+                        .failure(it)
+                }
+            return tup.end()
+        }
+    }
 
     @Test
     fun serializeWithHeaders() {
@@ -213,7 +331,7 @@ class WriterTest {
     @Test
     fun serializeTuple() {
         val wtr = WriterBuilder.new().fromWriter()
-        wtr.serializeTuple(listOf(true, 1.3, "hi")).getOrThrow()
+        wtr.serialize(Tuple3(true, 1.3, "hi")).getOrThrow()
         assertEquals("true,1.3,hi\n", wtr.asString())
     }
 

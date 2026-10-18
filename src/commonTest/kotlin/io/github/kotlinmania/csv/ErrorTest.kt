@@ -82,12 +82,12 @@ class ErrorTest {
         assertTrue(serErr.toString().contains("CSV write error: failed to serialize"))
 
         val pos = Position(15uL, 2uL, 1uL)
-        val deKindWithPos = ErrorKind.Deserialize(pos = pos, message = "invalid field")
+        val deKindWithPos = ErrorKind.Deserialize(pos = pos, err = DeserializeError.custom("invalid field"))
         val deErrWithPos = CsvError.new(deKindWithPos)
         assertEquals(pos, deErrWithPos.position())
         assertTrue(deErrWithPos.toString().contains("CSV deserialize error: record 1"))
 
-        val deKindNoPos = ErrorKind.Deserialize(pos = null, message = "missing field")
+        val deKindNoPos = ErrorKind.Deserialize(pos = null, err = DeserializeError.custom("missing field"))
         val deErrNoPos = CsvError.new(deKindNoPos)
         assertNull(deErrNoPos.position())
         assertTrue(deErrNoPos.toString().contains("CSV deserialize error: missing field"))

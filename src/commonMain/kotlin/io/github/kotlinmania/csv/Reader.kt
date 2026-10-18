@@ -1,6 +1,8 @@
 // port-lint: source reader.rs
 package io.github.kotlinmania.csv
 
+import io.github.kotlinmania.serdecore.de.Deserialize
+
 /**
  * Builds a CSV reader with various configuration knobs.
  */
@@ -259,18 +261,12 @@ public class Reader internal constructor(
     public fun intoRecords(): StringRecordsIntoIter = StringRecordsIntoIter(this)
 
     public fun <D> deserialize(
-        deserializer: kotlinx.serialization.DeserializationStrategy<D>,
+        deserializer: Deserialize<D>,
     ): DeserializeRecordsIter<D> = DeserializeRecordsIter(this, deserializer)
 
     public fun <D> intoDeserialize(
-        deserializer: kotlinx.serialization.DeserializationStrategy<D>,
+        deserializer: Deserialize<D>,
     ): DeserializeRecordsIntoIter<D> = DeserializeRecordsIntoIter(this, deserializer)
-
-    public inline fun <reified D> deserialize(): DeserializeRecordsIter<D> =
-        deserialize(kotlinx.serialization.serializer())
-
-    public inline fun <reified D> intoDeserialize(): DeserializeRecordsIntoIter<D> =
-        intoDeserialize(kotlinx.serialization.serializer())
 
     public fun setHeadersImpl(headers: ByteRecord) {
         setByteHeaders(headers)
@@ -561,7 +557,7 @@ public class ByteRecordsIntoIter internal constructor(
  */
 public class DeserializeRecordsIter<D> internal constructor(
     private val rdr: Reader,
-    private val deserializer: kotlinx.serialization.DeserializationStrategy<D>,
+    private val deserializer: Deserialize<D>,
 ) : Iterator<Result<D>>,
     Iterable<Result<D>> {
     private val stringIter = StringRecordsIter(rdr)
@@ -592,7 +588,7 @@ public class DeserializeRecordsIter<D> internal constructor(
  */
 public class DeserializeRecordsIntoIter<D> internal constructor(
     private val rdr: Reader,
-    private val deserializer: kotlinx.serialization.DeserializationStrategy<D>,
+    private val deserializer: Deserialize<D>,
 ) : Iterator<Result<D>>,
     Iterable<Result<D>> {
     private val iter = DeserializeRecordsIter(rdr, deserializer)

@@ -205,15 +205,9 @@ public class StringRecord private constructor(
      * Deserialize this record into [T] using the given [deserializer].
      */
     public fun <T> deserialize(
-        deserializer: kotlinx.serialization.DeserializationStrategy<T>,
+        deserializer: io.github.kotlinmania.serdecore.de.Deserialize<T>,
         headers: StringRecord? = null,
-    ): Result<T> = CsvDeserializer.deserialize(this, deserializer, headers)
-
-    /**
-     * Deserialize this record into [T] using the default serializer.
-     */
-    public inline fun <reified T> deserialize(headers: StringRecord? = null): Result<T> =
-        deserialize(kotlinx.serialization.serializer(), headers)
+    ): Result<T> = deserializeStringRecord(this, deserializer, headers)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

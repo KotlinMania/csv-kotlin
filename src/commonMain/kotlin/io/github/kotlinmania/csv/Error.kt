@@ -2,7 +2,6 @@
 package io.github.kotlinmania.csv
 
 public typealias Result<T> = kotlin.Result<T>
-public typealias Error = CsvError
 
 /**
  * An error that can occur when processing CSV data.

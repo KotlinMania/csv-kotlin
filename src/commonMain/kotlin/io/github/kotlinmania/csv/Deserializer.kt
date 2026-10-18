@@ -640,8 +640,6 @@ public inline fun <reified T> deHeaders(
 
 public fun b(bytes: ByteArray): ByteArray = bytes
 
-public typealias DeserializerError = DeserializeError
-
 public data class Variant(
     public val name: String,
     public val value: String? = null,

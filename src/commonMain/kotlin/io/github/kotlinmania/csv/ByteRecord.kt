@@ -604,6 +604,5 @@ public class Position(
 
 public fun b(s: String): ByteArray = s.encodeToByteArray()
 
-public typealias ByteRecordOutput = ByteRecord
 public typealias ByteRecordIntoIter = Iterator<ByteArray>
 public typealias ByteRecordItem = ByteArray

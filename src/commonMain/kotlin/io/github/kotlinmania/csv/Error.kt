@@ -1,7 +1,9 @@
 // port-lint: source error.rs
 package io.github.kotlinmania.csv
 
-public typealias Result<T> = kotlin.Result<T>
+public typealias CsvResult<T> = kotlin.Result<T>
+internal typealias Result<T> = kotlin.Result<T>
+internal typealias Error = CsvError
 
 /**
  * An error that can occur when processing CSV data.
@@ -45,9 +47,9 @@ public class CsvError(
             is ErrorKind.Deserialize -> {
                 val pos = kind.pos
                 if (pos == null) {
-                    "CSV deserialize error: ${kind.message}"
+                    "CSV deserialize error: ${kind.err}"
                 } else {
-                    "CSV deserialize error: record ${pos.record()} (line: ${pos.line()}, byte: ${pos.byte()}): ${kind.message}"
+                    "CSV deserialize error: record ${pos.record()} (line: ${pos.line()}, byte: ${pos.byte()}): ${kind.err}"
                 }
             }
         }
@@ -58,6 +60,8 @@ public class CsvError(
         public fun new(kind: ErrorKind): CsvError = CsvError(kind)
 
         public fun from(kind: ErrorKind): CsvError = CsvError(kind)
+
+        public fun custom(msg: String): CsvError = CsvError(ErrorKind.Serialize(msg))
 
         public fun from(cause: Throwable): CsvError =
             if (cause is CsvError) cause else CsvError(ErrorKind.Io(cause.message ?: "IO error", cause))
@@ -102,8 +106,10 @@ public sealed class ErrorKind {
 
     public data class Deserialize(
         val pos: Position?,
-        val message: String,
-    ) : ErrorKind()
+        val err: DeserializeError,
+    ) : ErrorKind() {
+        val message: String get() = err.toString()
+    }
 }
 
 /**

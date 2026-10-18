@@ -1,424 +1,476 @@
 // port-lint: source deserializer.rs
-@file:OptIn(kotlin.experimental.ExperimentalObjCRefinement::class)
-
 package io.github.kotlinmania.csv
 
-import kotlinx.serialization.DeserializationStrategy
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.descriptors.StructureKind
-import kotlinx.serialization.encoding.AbstractDecoder
-import kotlinx.serialization.encoding.CompositeDecoder
-import kotlinx.serialization.modules.EmptySerializersModule
-import kotlinx.serialization.modules.SerializersModule
-import kotlin.native.HiddenFromObjC
+import io.github.kotlinmania.serde.SerdeError
+import io.github.kotlinmania.serde.SerdeResult
+import io.github.kotlinmania.serdecore.StdError
+import io.github.kotlinmania.serdecore.de.Deserialize
+import io.github.kotlinmania.serdecore.de.DeserializeSeed
+import io.github.kotlinmania.serdecore.de.Deserializer
+import io.github.kotlinmania.serdecore.de.EnumAccess
+import io.github.kotlinmania.serdecore.de.MapAccess
+import io.github.kotlinmania.serdecore.de.SeqAccess
+import io.github.kotlinmania.serdecore.de.Unexpected
+import io.github.kotlinmania.serdecore.de.VariantAccess
+import io.github.kotlinmania.serdecore.de.Visitor
+import io.github.kotlinmania.serdecore.de.value.BytesDeserializer
+import io.github.kotlinmania.serdecore.de.value.StrDeserializer
 
 /**
- * Deserializes a [StringRecord] into [T] using the given [DeserializationStrategy].
+ * Deserialize a string record.
  */
-@HiddenFromObjC
-public fun <T> deserializeStringRecord(
+public fun <D> deserializeStringRecord(
     record: StringRecord,
-    deserializer: DeserializationStrategy<T>,
+    deserializer: Deserialize<D>,
     headers: StringRecord? = null,
-): Result<T> = CsvDeserializer.deserialize(record, deserializer, headers)
-
-/**
- * Deserializes a [StringRecord] into [T] using the default serializer.
- */
-@HiddenFromObjC
-public inline fun <reified T> deserializeStringRecord(
-    record: StringRecord,
-    headers: StringRecord? = null,
-): Result<T> = CsvDeserializer.deserialize(record, kotlinx.serialization.serializer(), headers)
-
-/**
- * Deserializes a [ByteRecord] into [T] using the given [DeserializationStrategy].
- */
-@HiddenFromObjC
-public fun <T> deserializeByteRecord(
-    record: ByteRecord,
-    deserializer: DeserializationStrategy<T>,
-    headers: ByteRecord? = null,
-): Result<T> = CsvDeserializer.deserialize(record, deserializer, headers)
-
-/**
- * Deserializes a [ByteRecord] into [T] using the default serializer.
- */
-@HiddenFromObjC
-public inline fun <reified T> deserializeByteRecord(
-    record: ByteRecord,
-    headers: ByteRecord? = null,
-): Result<T> = CsvDeserializer.deserialize(record, kotlinx.serialization.serializer(), headers)
-
-/**
- * Deserializes values from CSV records using kotlinx.serialization.
- */
-@HiddenFromObjC
-public object CsvDeserializer {
-    /**
-     * Deserializes a [StringRecord] into [T] using the given [DeserializationStrategy].
-     */
-    public fun <T> deserialize(
-        record: StringRecord,
-        deserializer: DeserializationStrategy<T>,
-        headers: StringRecord? = null,
-    ): Result<T> =
-        try {
-            val decoder =
-                CsvRecordDecoder(
-                    fields = (0 until record.len()).map { record[it] ?: "" },
-                    headers = headers?.let { h -> (0 until h.len()).map { h[it] ?: "" } },
-                    position = record.position(),
-                )
-            Result.success(deserializer.deserialize(decoder))
-        } catch (e: Exception) {
-            Result.failure(
-                if (e is CsvError) {
-                    e
-                } else {
-                    CsvError(
-                        ErrorKind.Deserialize(
-                            pos = record.position(),
-                            message = e.message ?: "Deserialization failed",
-                        ),
-                    )
-                },
-            )
-        }
-
-    /**
-     * Deserializes a [ByteRecord] into [T] using the given [DeserializationStrategy].
-     */
-    public fun <T> deserialize(
-        record: ByteRecord,
-        deserializer: DeserializationStrategy<T>,
-        headers: ByteRecord? = null,
-    ): Result<T> =
-        try {
-            val fields = (0 until record.len()).map { record[it]?.decodeToString() ?: "" }
-            val headerFields = headers?.let { h -> (0 until h.len()).map { h[it]?.decodeToString() ?: "" } }
-            val decoder =
-                CsvRecordDecoder(
-                    fields = fields,
-                    headers = headerFields,
-                    position = record.position(),
-                )
-            Result.success(deserializer.deserialize(decoder))
-        } catch (e: Exception) {
-            Result.failure(
-                if (e is CsvError) {
-                    e
-                } else {
-                    CsvError(
-                        ErrorKind.Deserialize(
-                            pos = record.position(),
-                            message = e.message ?: "Deserialization failed",
-                        ),
-                    )
-                },
-            )
-        }
+): Result<D> {
+    val deser = DeRecordWrap(DeStringRecord(record, headers))
+    return deserializer.deserialize(deser).fold(
+        onSuccess = { Result.success(it) },
+        onFailure = { err ->
+            val dErr = deser.error(DeserializeErrorKind.Message(err.message))
+            Result.failure(CsvError.new(ErrorKind.Deserialize(record.position()?.clone(), dErr)))
+        },
+    )
 }
 
 /**
- * An [AbstractDecoder] that reads elements sequentially or by header name from a list of CSV field strings.
+ * Deserialize a byte record.
  */
-@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
-internal class CsvRecordDecoder(
-    private val fields: List<String>,
-    private val headers: List<String>?,
-    private val position: Position?,
-    override val serializersModule: SerializersModule = EmptySerializersModule(),
-) : AbstractDecoder() {
-    private var currentIndex = 0
-    private var currentField = 0
-    private var isHeaderMapped = false
-    private var headerIndices: IntArray? = null
+public fun <D> deserializeByteRecord(
+    record: ByteRecord,
+    deserializer: Deserialize<D>,
+    headers: ByteRecord? = null,
+): Result<D> {
+    val deser = DeRecordWrap(DeByteRecord(record, headers))
+    return deserializer.deserialize(deser).fold(
+        onSuccess = { Result.success(it) },
+        onFailure = { err ->
+            val dErr = deser.error(DeserializeErrorKind.Message(err.message))
+            Result.failure(CsvError.new(ErrorKind.Deserialize(record.position()?.clone(), dErr)))
+        },
+    )
+}
 
-    private var isUnsigned = false
+internal interface DeRecord {
+    fun hasHeaders(): Boolean
 
-    override fun decodeInline(descriptor: SerialDescriptor): kotlinx.serialization.encoding.Decoder {
-        val name = descriptor.serialName
-        if (name == "kotlin.UInt" || name == "kotlin.ULong" || name == "kotlin.UByte" || name == "kotlin.UShort") {
-            isUnsigned = true
-        }
-        return this
-    }
+    fun nextHeader(): Result<String?>
 
-    override fun beginStructure(descriptor: SerialDescriptor): CompositeDecoder {
-        if (fields.isEmpty() && descriptor.elementsCount > 0 && (0 until descriptor.elementsCount).any { !descriptor.isElementOptional(it) }) {
-            throw CsvError(
-                ErrorKind.Deserialize(
-                    pos = position,
-                    message = "cannot deserialize non-optional fields for ${descriptor.serialName} from empty record",
-                ),
-            )
-        }
-        if (descriptor.kind is StructureKind.LIST) {
-            val remainingFields =
-                if (currentField in fields.indices) {
-                    fields.subList(currentField, fields.size)
-                } else {
-                    emptyList()
-                }
-            return CsvRecordDecoder(
-                fields = remainingFields,
-                headers = null,
-                position = position,
-            )
-        }
-        if (headers != null && (descriptor.kind is StructureKind.CLASS || descriptor.kind is StructureKind.OBJECT)) {
-            val decoder = CsvRecordDecoder(fields, headers, position)
-            decoder.isHeaderMapped = true
-            decoder.headerIndices =
-                IntArray(descriptor.elementsCount) { i ->
-                    val name = descriptor.getElementName(i)
-                    val idx = headers.indexOf(name)
-                    if (idx == -1 && !descriptor.isElementOptional(i)) {
-                        throw CsvError(
-                            ErrorKind.Deserialize(
-                                pos = position,
-                                message = "field '$name' not found in headers $headers",
-                            ),
-                        )
-                    }
-                    idx
-                }
-            return decoder
-        }
-        return this
-    }
+    fun nextHeaderBytes(): Result<ByteArray?>
 
-    override fun decodeElementIndex(descriptor: SerialDescriptor): Int {
-        if (isHeaderMapped && headerIndices != null) {
-            while (currentIndex < descriptor.elementsCount) {
-                val fieldIdx = headerIndices!![currentIndex]
-                val idx = currentIndex++
-                if (fieldIdx in fields.indices) {
-                    currentField = fieldIdx
-                    return idx
-                }
+    fun nextField(): Result<String>
+
+    fun nextFieldBytes(): Result<ByteArray>
+
+    fun peekField(): ByteArray?
+
+    fun error(kind: DeserializeErrorKind): DeserializeError
+
+    fun currentField(): ULong
+
+    fun <V> inferDeserialize(visitor: Visitor<V>): SerdeResult<V>
+}
+
+internal class DeRecordWrap<T : DeRecord>(
+    val inner: T,
+) : Deserializer,
+    EnumAccess,
+    VariantAccess,
+    SeqAccess,
+    MapAccess {
+    fun hasHeaders(): Boolean = inner.hasHeaders()
+
+    fun nextHeader(): Result<String?> = inner.nextHeader()
+
+    fun nextHeaderBytes(): Result<ByteArray?> = inner.nextHeaderBytes()
+
+    fun nextField(): Result<String> = inner.nextField()
+
+    fun nextFieldBytes(): Result<ByteArray> = inner.nextFieldBytes()
+
+    fun peekField(): ByteArray? = inner.peekField()
+
+    fun error(kind: DeserializeErrorKind): DeserializeError = inner.error(kind)
+
+    fun currentField(): ULong = inner.currentField()
+
+    fun <V> inferDeserialize(visitor: Visitor<V>): SerdeResult<V> = inner.inferDeserialize(visitor)
+
+    override fun <V> deserializeAny(visitor: Visitor<V>): SerdeResult<V> =
+        inferDeserialize(visitor)
+
+    override fun <V> deserializeBool(visitor: Visitor<V>): SerdeResult<V> {
+        val field = nextField().getOrElse { return fail(it) }
+        val b =
+            when (field) {
+                "true" -> true
+                "false" -> false
+                else -> return fail(error(DeserializeErrorKind.ParseBool("invalid boolean: $field")))
             }
-            return CompositeDecoder.DECODE_DONE
-        }
-
-        if (descriptor.kind is StructureKind.LIST) {
-            if (currentIndex < fields.size) {
-                currentField = currentIndex
-                return currentIndex++
-            }
-            return CompositeDecoder.DECODE_DONE
-        }
-
-        if (currentIndex < fields.size && currentIndex < descriptor.elementsCount) {
-            currentField = currentIndex
-            return currentIndex++
-        }
-        return CompositeDecoder.DECODE_DONE
+        return visitor.visitBool(b)
     }
 
-    private fun getCurrentValue(): String {
-        if (fields.isEmpty() && currentField == 0) {
-            throw CsvError(
-                ErrorKind.Deserialize(
-                    pos = position,
-                    message = "expected field, but got end of row",
-                ),
-            )
+    override fun <V> deserializeI8(visitor: Visitor<V>): SerdeResult<V> {
+        val field = nextField().getOrElse { return fail(it) }
+        val num =
+            parseSigned(field)?.toByte()
+                ?: return fail(error(DeserializeErrorKind.ParseInt("invalid integer: $field")))
+        return visitor.visitI8(num)
+    }
+
+    override fun <V> deserializeI16(visitor: Visitor<V>): SerdeResult<V> {
+        val field = nextField().getOrElse { return fail(it) }
+        val num =
+            parseSigned(field)?.toShort()
+                ?: return fail(error(DeserializeErrorKind.ParseInt("invalid integer: $field")))
+        return visitor.visitI16(num)
+    }
+
+    override fun <V> deserializeI32(visitor: Visitor<V>): SerdeResult<V> {
+        val field = nextField().getOrElse { return fail(it) }
+        val num =
+            parseSigned(field)?.toInt()
+                ?: return fail(error(DeserializeErrorKind.ParseInt("invalid integer: $field")))
+        return visitor.visitI32(num)
+    }
+
+    override fun <V> deserializeI64(visitor: Visitor<V>): SerdeResult<V> {
+        val field = nextField().getOrElse { return fail(it) }
+        val num =
+            parseSigned(field)
+                ?: return fail(error(DeserializeErrorKind.ParseInt("invalid integer: $field")))
+        return visitor.visitI64(num)
+    }
+
+    override fun <V> deserializeI128(visitor: Visitor<V>): SerdeResult<V> {
+        val field = nextField().getOrElse { return fail(it) }
+        if (tryNegativeInteger128(field) == null && tryPositiveInteger128(field) == null) {
+            return fail(error(DeserializeErrorKind.ParseInt("invalid integer: $field")))
         }
-        return if (currentField in fields.indices) {
-            fields[currentField]
+        return visitor.visitI128(field)
+    }
+
+    override fun <V> deserializeU8(visitor: Visitor<V>): SerdeResult<V> {
+        val field = nextField().getOrElse { return fail(it) }
+        val num =
+            parseUnsigned(field)?.toUByte()
+                ?: return fail(error(DeserializeErrorKind.ParseInt("invalid integer: $field")))
+        return visitor.visitU8(num)
+    }
+
+    override fun <V> deserializeU16(visitor: Visitor<V>): SerdeResult<V> {
+        val field = nextField().getOrElse { return fail(it) }
+        val num =
+            parseUnsigned(field)?.toUShort()
+                ?: return fail(error(DeserializeErrorKind.ParseInt("invalid integer: $field")))
+        return visitor.visitU16(num)
+    }
+
+    override fun <V> deserializeU32(visitor: Visitor<V>): SerdeResult<V> {
+        val field = nextField().getOrElse { return fail(it) }
+        val num =
+            parseUnsigned(field)?.toUInt()
+                ?: return fail(error(DeserializeErrorKind.ParseInt("invalid integer: $field")))
+        return visitor.visitU32(num)
+    }
+
+    override fun <V> deserializeU64(visitor: Visitor<V>): SerdeResult<V> {
+        val field = nextField().getOrElse { return fail(it) }
+        val num =
+            parseUnsigned(field)
+                ?: return fail(error(DeserializeErrorKind.ParseInt("invalid integer: $field")))
+        return visitor.visitU64(num)
+    }
+
+    override fun <V> deserializeU128(visitor: Visitor<V>): SerdeResult<V> {
+        val field = nextField().getOrElse { return fail(it) }
+        if (tryPositiveInteger128(field) == null) {
+            return fail(error(DeserializeErrorKind.ParseInt("invalid integer: $field")))
+        }
+        return visitor.visitU128(field)
+    }
+
+    override fun <V> deserializeF32(visitor: Visitor<V>): SerdeResult<V> {
+        val field = nextField().getOrElse { return fail(it) }
+        val num =
+            field.toFloatOrNull()
+                ?: return fail(error(DeserializeErrorKind.ParseFloat("invalid float: $field")))
+        return visitor.visitF32(num)
+    }
+
+    override fun <V> deserializeF64(visitor: Visitor<V>): SerdeResult<V> {
+        val field = nextField().getOrElse { return fail(it) }
+        val num =
+            field.toDoubleOrNull()
+                ?: return fail(error(DeserializeErrorKind.ParseFloat("invalid float: $field")))
+        return visitor.visitF64(num)
+    }
+
+    override fun <V> deserializeChar(visitor: Visitor<V>): SerdeResult<V> {
+        val field = nextField().getOrElse { return fail(it) }
+        if (field.length != 1) {
+            return fail(error(DeserializeErrorKind.Message("expected single character but got ${field.length} characters in '$field'")))
+        }
+        return visitor.visitChar(field[0])
+    }
+
+    override fun <V> deserializeStr(visitor: Visitor<V>): SerdeResult<V> {
+        val field = nextField().getOrElse { return fail(it) }
+        return visitor.visitStr(field)
+    }
+
+    override fun <V> deserializeString(visitor: Visitor<V>): SerdeResult<V> {
+        val field = nextField().getOrElse { return fail(it) }
+        return visitor.visitString(field)
+    }
+
+    override fun <V> deserializeBytes(visitor: Visitor<V>): SerdeResult<V> {
+        val bytes = nextFieldBytes().getOrElse { return fail(it) }
+        return visitor.visitBytes(bytes)
+    }
+
+    override fun <V> deserializeByteBuf(visitor: Visitor<V>): SerdeResult<V> {
+        val bytes = nextFieldBytes().getOrElse { return fail(it) }
+        return visitor.visitByteBuf(bytes)
+    }
+
+    override fun <V> deserializeOption(visitor: Visitor<V>): SerdeResult<V> {
+        val peek = peekField()
+        return when {
+            peek == null -> visitor.visitNone()
+            peek.isEmpty() -> {
+                nextField()
+                visitor.visitNone()
+            }
+            else -> visitor.visitSome(this)
+        }
+    }
+
+    override fun <V> deserializeUnit(visitor: Visitor<V>): SerdeResult<V> =
+        visitor.visitUnit()
+
+    override fun <V> deserializeUnitStruct(name: String, visitor: Visitor<V>): SerdeResult<V> =
+        visitor.visitUnit()
+
+    override fun <V> deserializeNewtypeStruct(name: String, visitor: Visitor<V>): SerdeResult<V> =
+        visitor.visitNewtypeStruct(this)
+
+    override fun <V> deserializeSeq(visitor: Visitor<V>): SerdeResult<V> =
+        visitor.visitSeq(this)
+
+    override fun <V> deserializeTuple(len: Int, visitor: Visitor<V>): SerdeResult<V> =
+        visitor.visitSeq(this)
+
+    override fun <V> deserializeTupleStruct(name: String, len: Int, visitor: Visitor<V>): SerdeResult<V> =
+        visitor.visitSeq(this)
+
+    override fun <V> deserializeMap(visitor: Visitor<V>): SerdeResult<V> =
+        if (!hasHeaders()) visitor.visitSeq(this) else visitor.visitMap(this)
+
+    override fun <V> deserializeStruct(name: String, fields: List<String>, visitor: Visitor<V>): SerdeResult<V> =
+        if (!hasHeaders()) visitor.visitSeq(this) else visitor.visitMap(this)
+
+    override fun <V> deserializeIdentifier(visitor: Visitor<V>): SerdeResult<V> =
+        fail(error(DeserializeErrorKind.Unsupported("deserialize_identifier")))
+
+    override fun <V> deserializeEnum(name: String, variants: List<String>, visitor: Visitor<V>): SerdeResult<V> =
+        visitor.visitEnum(this)
+
+    override fun <V> deserializeIgnoredAny(visitor: Visitor<V>): SerdeResult<V> {
+        nextFieldBytes().getOrElse { return fail(it) }
+        return visitor.visitUnit()
+    }
+
+    override fun <V> variantSeed(seed: DeserializeSeed<V>): SerdeResult<Pair<V, VariantAccess>> {
+        val variantName = nextField().getOrElse { return fail(it) }
+        val strDeser = StrDeserializer.new(variantName)
+        return seed.deserialize(strDeser).map { it to this }
+    }
+
+    override fun unitVariant(): SerdeResult<Unit> = SerdeResult.success(Unit)
+
+    override fun <U> newtypeVariantSeed(seed: DeserializeSeed<U>): SerdeResult<U> =
+        SerdeResult.failure(SerdeError.invalidType(Unexpected.UnitVariant) { "newtype variant" })
+
+    override fun <V> tupleVariant(len: Int, visitor: Visitor<V>): SerdeResult<V> =
+        SerdeResult.failure(SerdeError.invalidType(Unexpected.UnitVariant) { "tuple variant" })
+
+    override fun <V> structVariant(fields: List<String>, visitor: Visitor<V>): SerdeResult<V> =
+        SerdeResult.failure(SerdeError.invalidType(Unexpected.UnitVariant) { "struct variant" })
+
+    override fun sizeHint(): Int? = null
+
+    override fun <T> nextElementSeed(seed: DeserializeSeed<T>): SerdeResult<T?> =
+        if (peekField() == null) {
+            SerdeResult.success(null)
         } else {
-            ""
+            seed.deserialize(this).map { it }
         }
+
+    override fun <K> nextKeySeed(seed: DeserializeSeed<K>): SerdeResult<K?> {
+        val headerBytes = nextHeaderBytes().getOrElse { return fail(it) } ?: return SerdeResult.success(null)
+        val deser = BytesDeserializer.new(headerBytes)
+        return seed.deserialize(deser).map { it }
     }
 
-    override fun decodeNotNullMark(): Boolean {
-        if (fields.isEmpty()) return false
-        val v = getCurrentValue()
-        return v.isNotEmpty()
+    override fun <V> nextValueSeed(seed: DeserializeSeed<V>): SerdeResult<V> =
+        seed.deserialize(this)
+
+    private fun <V> fail(err: Throwable): SerdeResult<V> {
+        val serdeErr = if (err is DeserializeError) SerdeError.custom(err.message) else SerdeError.custom(err.message ?: "deserialization error")
+        return SerdeResult.failure(serdeErr)
+    }
+}
+
+internal class DeStringRecord(
+    private val record: StringRecord,
+    headersRecord: StringRecord?,
+) : DeRecord {
+    private var fieldIndex: Int = 0
+    private var headerIndex: Int = 0
+    private val headers: StringRecord? = headersRecord
+
+    override fun hasHeaders(): Boolean = headers != null
+
+    override fun nextHeader(): Result<String?> {
+        val h = headers ?: return Result.success(null)
+        if (headerIndex >= h.len()) return Result.success(null)
+        val field = h.get(headerIndex)
+        headerIndex++
+        return Result.success(field)
     }
 
-    override fun decodeNull(): Nothing? = null
+    override fun nextHeaderBytes(): Result<ByteArray?> {
+        val str = nextHeader().getOrElse { return Result.failure(it) } ?: return Result.success(null)
+        return Result.success(str.encodeToByteArray())
+    }
 
-    override fun decodeBoolean(): Boolean {
-        val s = getCurrentValue().trim()
-        return when (s.lowercase()) {
-            "true", "t", "1", "yes", "y" -> true
-            "false", "f", "0", "no", "n" -> false
-            else ->
-                s.toBooleanStrictOrNull()
-                    ?: throw CsvError(
-                        ErrorKind.Deserialize(
-                            pos = position,
-                            message = "cannot parse '$s' as boolean for field $currentField",
-                        ),
-                    )
+    override fun nextField(): Result<String> {
+        if (fieldIndex >= record.len()) {
+            return Result.failure(error(DeserializeErrorKind.UnexpectedEndOfRow))
         }
+        val f = record.get(fieldIndex) ?: return Result.failure(error(DeserializeErrorKind.UnexpectedEndOfRow))
+        fieldIndex++
+        return Result.success(f)
     }
 
-    override fun decodeByte(): Byte {
-        val s = getCurrentValue().trim()
-        val parsed =
-            if (isUnsigned) {
-                isUnsigned = false
-                if (s.startsWith("0x", ignoreCase = true)) {
-                    s.substring(2).toUByteOrNull(16)?.toByte()
-                } else {
-                    s.toUByteOrNull()?.toByte()
-                }
-            } else {
-                if (s.startsWith("0x", ignoreCase = true)) {
-                    s.substring(2).toByteOrNull(16)
-                } else {
-                    s.toByteOrNull()
-                }
-            }
-        return parsed
-            ?: throw CsvError(
-                ErrorKind.Deserialize(
-                    pos = position,
-                    message = "cannot parse '$s' as byte for field $currentField",
-                ),
-            )
+    override fun nextFieldBytes(): Result<ByteArray> {
+        val s = nextField().getOrElse { return Result.failure(it) }
+        return Result.success(s.encodeToByteArray())
     }
 
-    override fun decodeShort(): Short {
-        val s = getCurrentValue().trim()
-        val parsed =
-            if (isUnsigned) {
-                isUnsigned = false
-                if (s.startsWith("0x", ignoreCase = true)) {
-                    s.substring(2).toUShortOrNull(16)?.toShort()
-                } else {
-                    s.toUShortOrNull()?.toShort()
-                }
-            } else {
-                if (s.startsWith("0x", ignoreCase = true)) {
-                    s.substring(2).toShortOrNull(16)
-                } else {
-                    s.toShortOrNull()
-                }
-            }
-        return parsed
-            ?: throw CsvError(
-                ErrorKind.Deserialize(
-                    pos = position,
-                    message = "cannot parse '$s' as short for field $currentField",
-                ),
-            )
+    override fun peekField(): ByteArray? {
+        if (fieldIndex >= record.len()) return null
+        val f = record.get(fieldIndex) ?: return null
+        return f.encodeToByteArray()
     }
 
-    override fun decodeInt(): Int {
-        val s = getCurrentValue().trim()
-        val parsed =
-            if (isUnsigned) {
-                isUnsigned = false
-                if (s.startsWith("0x", ignoreCase = true)) {
-                    s.substring(2).toUIntOrNull(16)?.toInt()
-                } else {
-                    s.toUIntOrNull()?.toInt()
-                }
-            } else {
-                if (s.startsWith("0x", ignoreCase = true)) {
-                    s.substring(2).toIntOrNull(16)
-                } else {
-                    s.toIntOrNull()
-                }
-            }
-        return parsed
-            ?: throw CsvError(
-                ErrorKind.Deserialize(
-                    pos = position,
-                    message = "cannot parse '$s' as int for field $currentField",
-                ),
-            )
-    }
+    override fun currentField(): ULong =
+        if (fieldIndex == 0) 0uL else (fieldIndex - 1).toULong()
 
-    override fun decodeLong(): Long {
-        val s = getCurrentValue().trim()
-        val parsed =
-            if (isUnsigned) {
-                isUnsigned = false
-                if (s.startsWith("0x", ignoreCase = true)) {
-                    s.substring(2).toULongOrNull(16)?.toLong()
-                } else {
-                    s.toULongOrNull()?.toLong()
-                }
-            } else {
-                if (s.startsWith("0x", ignoreCase = true)) {
-                    s.substring(2).toLongOrNull(16)
-                } else {
-                    s.toLongOrNull()
-                }
-            }
-        return parsed
-            ?: throw CsvError(
-                ErrorKind.Deserialize(
-                    pos = position,
-                    message = "cannot parse '$s' as long for field $currentField",
-                ),
-            )
-    }
-
-    override fun decodeFloat(): Float {
-        val s = getCurrentValue().trim()
-        return s.toFloatOrNull()
-            ?: throw CsvError(
-                ErrorKind.Deserialize(
-                    pos = position,
-                    message = "cannot parse '$s' as float for field $currentField",
-                ),
-            )
-    }
-
-    override fun decodeDouble(): Double {
-        val s = getCurrentValue().trim()
-        return s.toDoubleOrNull()
-            ?: throw CsvError(
-                ErrorKind.Deserialize(
-                    pos = position,
-                    message = "cannot parse '$s' as double for field $currentField",
-                ),
-            )
-    }
-
-    override fun decodeChar(): Char {
-        val s = getCurrentValue()
-        return if (s.length == 1) {
-            s[0]
-        } else {
-            throw CsvError(
-                ErrorKind.Deserialize(
-                    pos = position,
-                    message = "cannot parse '$s' as char for field $currentField",
-                ),
-            )
-        }
-    }
-
-    override fun decodeString(): String = getCurrentValue()
-
-    override fun decodeEnum(enumDescriptor: SerialDescriptor): Int {
-        val name = getCurrentValue().trim()
-        val index = enumDescriptor.getElementIndex(name)
-        if (index != CompositeDecoder.UNKNOWN_NAME) {
-            return index
-        }
-        for (i in 0 until enumDescriptor.elementsCount) {
-            val elName = enumDescriptor.getElementName(i)
-            if (elName.equals(name, ignoreCase = true) ||
-                elName.replace("_", "").equals(name.replace("_", ""), ignoreCase = true)
-            ) {
-                return i
-            }
-        }
-        throw CsvError(
-            ErrorKind.Deserialize(
-                pos = position,
-                message = "cannot parse '$name' as enum for ${enumDescriptor.serialName}",
-            ),
+    override fun error(kind: DeserializeErrorKind): DeserializeError =
+        DeserializeError(
+            if (fieldIndex == 0) null else (fieldIndex - 1).toULong(),
+            kind,
         )
+
+    override fun <V> inferDeserialize(visitor: Visitor<V>): SerdeResult<V> {
+        val x =
+            nextField().getOrElse {
+                val err = it as? DeserializeError ?: error(DeserializeErrorKind.Message(it.message ?: ""))
+                return SerdeResult.failure(SerdeError.custom(err.message))
+            }
+        return when {
+            x == "true" -> visitor.visitBool(true)
+            x == "false" -> visitor.visitBool(false)
+            tryPositiveInteger64(x) != null -> visitor.visitU64(tryPositiveInteger64(x)!!)
+            tryNegativeInteger64(x) != null -> visitor.visitI64(tryNegativeInteger64(x)!!)
+            tryPositiveInteger128(x) != null -> visitor.visitU128(x)
+            tryNegativeInteger128(x) != null -> visitor.visitI128(x)
+            tryFloat(x) != null -> visitor.visitF64(tryFloat(x)!!)
+            else -> visitor.visitStr(x)
+        }
+    }
+}
+
+internal class DeByteRecord(
+    private val record: ByteRecord,
+    headersRecord: ByteRecord?,
+) : DeRecord {
+    private var fieldIndex: Int = 0
+    private var headerIndex: Int = 0
+    private val headers: ByteRecord? = headersRecord
+
+    override fun hasHeaders(): Boolean = headers != null
+
+    override fun nextHeader(): Result<String?> {
+        val bytes = nextHeaderBytes().getOrElse { return Result.failure(it) } ?: return Result.success(null)
+        return try {
+            Result.success(bytes.decodeToString())
+        } catch (e: Exception) {
+            Result.failure(error(DeserializeErrorKind.InvalidUtf8(Utf8Error(headerIndex - 1, 0))))
+        }
+    }
+
+    override fun nextHeaderBytes(): Result<ByteArray?> {
+        val h = headers ?: return Result.success(null)
+        if (headerIndex >= h.len()) return Result.success(null)
+        val field = h.get(headerIndex)
+        headerIndex++
+        return Result.success(field)
+    }
+
+    override fun nextField(): Result<String> {
+        val bytes = nextFieldBytes().getOrElse { return Result.failure(it) }
+        return try {
+            Result.success(bytes.decodeToString())
+        } catch (e: Exception) {
+            Result.failure(error(DeserializeErrorKind.InvalidUtf8(Utf8Error(fieldIndex - 1, 0))))
+        }
+    }
+
+    override fun nextFieldBytes(): Result<ByteArray> {
+        if (fieldIndex >= record.len()) {
+            return Result.failure(error(DeserializeErrorKind.UnexpectedEndOfRow))
+        }
+        val f = record.get(fieldIndex) ?: return Result.failure(error(DeserializeErrorKind.UnexpectedEndOfRow))
+        fieldIndex++
+        return Result.success(f)
+    }
+
+    override fun peekField(): ByteArray? {
+        if (fieldIndex >= record.len()) return null
+        return record.get(fieldIndex)
+    }
+
+    override fun currentField(): ULong =
+        if (fieldIndex == 0) 0uL else (fieldIndex - 1).toULong()
+
+    override fun error(kind: DeserializeErrorKind): DeserializeError =
+        DeserializeError(
+            if (fieldIndex == 0) null else (fieldIndex - 1).toULong(),
+            kind,
+        )
+
+    override fun <V> inferDeserialize(visitor: Visitor<V>): SerdeResult<V> {
+        val x =
+            nextFieldBytes().getOrElse {
+                val err = it as? DeserializeError ?: error(DeserializeErrorKind.Message(it.message ?: ""))
+                return SerdeResult.failure(SerdeError.custom(err.message))
+            }
+        val s = runCatching { x.decodeToString() }.getOrNull()
+        return when {
+            s == "true" -> visitor.visitBool(true)
+            s == "false" -> visitor.visitBool(false)
+            s != null && tryPositiveInteger64(s) != null -> visitor.visitU64(tryPositiveInteger64(s)!!)
+            s != null && tryNegativeInteger64(s) != null -> visitor.visitI64(tryNegativeInteger64(s)!!)
+            s != null && tryPositiveInteger128(s) != null -> visitor.visitU128(s)
+            s != null && tryNegativeInteger128(s) != null -> visitor.visitI128(s)
+            s != null && tryFloat(s) != null -> visitor.visitF64(tryFloat(s)!!)
+            s != null -> visitor.visitStr(s)
+            else -> visitor.visitBytes(x)
+        }
     }
 }
 
@@ -428,10 +480,15 @@ internal class CsvRecordDecoder(
 public class DeserializeError(
     private val fieldVal: ULong?,
     private val kindVal: DeserializeErrorKind,
-) {
+) : Exception(formatMessage(fieldVal, kindVal)),
+    StdError {
     public fun field(): ULong? = fieldVal
 
     public fun kind(): DeserializeErrorKind = kindVal
+
+    override val message: String get() = formatMessage(fieldVal, kindVal)
+
+    override fun toString(): String = message
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -439,287 +496,115 @@ public class DeserializeError(
         return fieldVal == other.fieldVal && kindVal == other.kindVal
     }
 
-    override fun hashCode(): Int {
-        var result = fieldVal?.hashCode() ?: 0
-        result = 31 * result + kindVal.hashCode()
-        return result
-    }
+    override fun hashCode(): Int = (fieldVal?.hashCode() ?: 0) * 31 + kindVal.hashCode()
 
-    override fun toString(): String = "DeserializeError(field=$fieldVal, kind=$kindVal)"
+    public companion object {
+        public fun custom(msg: String): DeserializeError =
+            DeserializeError(null, DeserializeErrorKind.Message(msg))
+
+        private fun formatMessage(field: ULong?, kind: DeserializeErrorKind): String =
+            if (field != null) "field $field: $kind" else kind.toString()
+    }
 }
 
 /**
- * The kind of a Serde deserialization error.
+ * The type of a Serde deserialization error.
  */
 public sealed class DeserializeErrorKind {
-    public data class Message(
+    public class Message(
         public val msg: String,
-    ) : DeserializeErrorKind()
+    ) : DeserializeErrorKind() {
+        override fun toString(): String = msg
 
-    public data class Unsupported(
+        override fun equals(other: Any?): Boolean = other is Message && other.msg == msg
+
+        override fun hashCode(): Int = msg.hashCode()
+    }
+
+    public class Unsupported(
         public val which: String,
-    ) : DeserializeErrorKind()
+    ) : DeserializeErrorKind() {
+        override fun toString(): String = "unsupported deserializer method: $which"
 
-    public object UnexpectedEndOfRow : DeserializeErrorKind()
+        override fun equals(other: Any?): Boolean = other is Unsupported && other.which == which
 
-    public data class InvalidUtf8(
-        public val message: String,
-    ) : DeserializeErrorKind()
-
-    public data class ParseBool(
-        public val message: String,
-    ) : DeserializeErrorKind()
-
-    public data class ParseInt(
-        public val message: String,
-    ) : DeserializeErrorKind()
-
-    public data class ParseFloat(
-        public val message: String,
-    ) : DeserializeErrorKind()
-
-    public fun description(): String =
-        when (this) {
-            is Message -> "deserialization error"
-            is Unsupported -> "unsupported deserializer method"
-            UnexpectedEndOfRow -> "expected field, but got end of row"
-            is InvalidUtf8 -> "invalid utf-8"
-            is ParseBool -> "failed to parse bool"
-            is ParseInt -> "failed to parse integer"
-            is ParseFloat -> "failed to parse float"
-        }
-}
-
-internal interface DeRecord {
-    public fun hasHeaders(): Boolean
-
-    public fun nextHeader(): String?
-
-    public fun nextHeaderBytes(): ByteArray?
-
-    public fun nextField(): Result<String>
-
-    public fun nextFieldBytes(): Result<ByteArray>
-
-    public fun peekField(): ByteArray?
-
-    public fun error(kind: DeserializeErrorKind): DeserializeError
-}
-
-internal class DeRecordWrap<T : DeRecord>(
-    public val inner: T,
-) : DeRecord {
-    override fun hasHeaders(): Boolean = inner.hasHeaders()
-
-    override fun nextHeader(): String? = inner.nextHeader()
-
-    override fun nextHeaderBytes(): ByteArray? = inner.nextHeaderBytes()
-
-    override fun nextField(): Result<String> = inner.nextField()
-
-    override fun nextFieldBytes(): Result<ByteArray> = inner.nextFieldBytes()
-
-    override fun peekField(): ByteArray? = inner.peekField()
-
-    override fun error(kind: DeserializeErrorKind): DeserializeError = inner.error(kind)
-}
-
-internal class DeStringRecord(
-    private val record: StringRecord,
-    private val headers: StringRecord? = null,
-) : DeRecord {
-    private var idx = 0
-    private var headerIdx = 0
-
-    override fun hasHeaders(): Boolean = headers != null
-
-    override fun nextHeader(): String? =
-        if (headers != null && headerIdx < headers.len()) {
-            headers[headerIdx++]
-        } else {
-            null
-        }
-
-    override fun nextHeaderBytes(): ByteArray? = nextHeader()?.encodeToByteArray()
-
-    override fun nextField(): Result<String> {
-        if (idx < record.len()) {
-            val f = record[idx++] ?: ""
-            return Result.success(f)
-        }
-        return Result.failure(CsvError(ErrorKind.Deserialize(record.position(), "Unexpected end of row")))
+        override fun hashCode(): Int = which.hashCode()
     }
 
-    override fun nextFieldBytes(): Result<ByteArray> = nextField().map { it.encodeToByteArray() }
-
-    override fun peekField(): ByteArray? =
-        if (idx < record.len()) {
-            (record[idx] ?: "").encodeToByteArray()
-        } else {
-            null
-        }
-
-    override fun error(kind: DeserializeErrorKind): DeserializeError =
-        DeserializeError(if (idx > 0) (idx - 1).toULong() else null, kind)
-}
-
-internal class DeByteRecord(
-    private val record: ByteRecord,
-    private val headers: ByteRecord? = null,
-) : DeRecord {
-    private var idx = 0
-    private var headerIdx = 0
-
-    override fun hasHeaders(): Boolean = headers != null
-
-    override fun nextHeader(): String? = nextHeaderBytes()?.decodeToString()
-
-    override fun nextHeaderBytes(): ByteArray? =
-        if (headers != null && headerIdx < headers.len()) {
-            headers[headerIdx++]
-        } else {
-            null
-        }
-
-    override fun nextField(): Result<String> = nextFieldBytes().map { it.decodeToString() }
-
-    override fun nextFieldBytes(): Result<ByteArray> {
-        if (idx < record.len()) {
-            val f = record[idx++] ?: ByteArray(0)
-            return Result.success(f)
-        }
-        return Result.failure(CsvError(ErrorKind.Deserialize(record.position(), "Unexpected end of row")))
+    public data object UnexpectedEndOfRow : DeserializeErrorKind() {
+        override fun toString(): String = "expected field, but got end of row"
     }
 
-    override fun peekField(): ByteArray? =
-        if (idx < record.len()) {
-            record[idx]
+    public class InvalidUtf8(
+        public val err: Utf8Error,
+    ) : DeserializeErrorKind() {
+        override fun toString(): String = err.toString()
+
+        override fun equals(other: Any?): Boolean = other is InvalidUtf8 && other.err == err
+
+        override fun hashCode(): Int = err.hashCode()
+    }
+
+    public class ParseBool(
+        public val err: String,
+    ) : DeserializeErrorKind() {
+        override fun toString(): String = err
+
+        override fun equals(other: Any?): Boolean = other is ParseBool && other.err == err
+
+        override fun hashCode(): Int = err.hashCode()
+    }
+
+    public class ParseInt(
+        public val err: String,
+    ) : DeserializeErrorKind() {
+        override fun toString(): String = err
+
+        override fun equals(other: Any?): Boolean = other is ParseInt && other.err == err
+
+        override fun hashCode(): Int = err.hashCode()
+    }
+
+    public class ParseFloat(
+        public val err: String,
+    ) : DeserializeErrorKind() {
+        override fun toString(): String = err
+
+        override fun equals(other: Any?): Boolean = other is ParseFloat && other.err == err
+
+        override fun hashCode(): Int = err.hashCode()
+    }
+}
+
+internal fun tryPositiveInteger128(s: String): String? =
+    if (s.isNotEmpty() && s.all { it in '0'..'9' }) s else null
+
+internal fun tryNegativeInteger128(s: String): String? =
+    if (s.startsWith("-") && s.length > 1 && s.substring(1).all { it in '0'..'9' }) s else null
+
+internal fun tryPositiveInteger64(s: String): ULong? =
+    s.toULongOrNull()
+
+internal fun tryNegativeInteger64(s: String): Long? =
+    s.toLongOrNull()?.takeIf { it < 0 }
+
+internal fun tryFloat(s: String): Double? =
+    s.toDoubleOrNull()
+
+private fun parseSigned(field: String): Long? =
+    runCatching {
+        if (field.startsWith("0x") || field.startsWith("0X")) {
+            field.substring(2).toLong(16)
         } else {
-            null
+            field.toLong()
         }
+    }.getOrNull()
 
-    override fun error(kind: DeserializeErrorKind): DeserializeError =
-        DeserializeError(if (idx > 0) (idx - 1).toULong() else null, kind)
-}
-
-public fun tryPositiveInteger128(s: String): ULong? = s.toULongOrNull()
-
-public fun tryNegativeInteger128(s: String): Long? = s.toLongOrNull()
-
-public fun tryPositiveInteger64(s: String): ULong? = s.toULongOrNull()
-
-public fun tryNegativeInteger64(s: String): Long? = s.toLongOrNull()
-
-public fun tryFloat(s: String): Double? = s.toDoubleOrNull()
-
-public fun tryPositiveInteger64Bytes(s: ByteArray): ULong? = s.decodeToString().toULongOrNull()
-
-public fun tryNegativeInteger64Bytes(s: ByteArray): Long? = s.decodeToString().toLongOrNull()
-
-public fun tryPositiveInteger128Bytes(s: ByteArray): ULong? = s.decodeToString().toULongOrNull()
-
-public fun tryNegativeInteger128Bytes(s: ByteArray): Long? = s.decodeToString().toLongOrNull()
-
-public fun tryFloatBytes(s: ByteArray): Double? = s.decodeToString().toDoubleOrNull()
-
-@HiddenFromObjC
-public inline fun <reified T> de(fields: List<String>): Result<T> {
-    val record = StringRecord.from(fields)
-    return deserializeStringRecord(record)
-}
-
-@HiddenFromObjC
-public inline fun <reified T> deHeaders(
-    headers: List<String>,
-    fields: List<String>,
-): Result<T> {
-    val headRec = StringRecord.from(headers)
-    val record = StringRecord.from(fields)
-    return deserializeStringRecord(record, headRec)
-}
-
-public fun b(bytes: ByteArray): ByteArray = bytes
-
-public data class Variant(
-    public val name: String,
-    public val value: String? = null,
-)
-
-public data class Bar(
-    public val bar: String = "",
-)
-
-public data class Row(
-    public val fields: List<String> = emptyList(),
-)
-
-public fun inferDeserialize(s: String): Any? =
-    s.toIntOrNull() ?: s.toDoubleOrNull() ?: s.toBooleanStrictOrNull() ?: s
-
-public fun deserializeAny(s: String): Any? = inferDeserialize(s)
-
-public fun deserializeBool(s: String): Boolean? = s.toBooleanStrictOrNull()
-
-public fun deserializeF32(s: String): Float? = s.toFloatOrNull()
-
-public fun deserializeF64(s: String): Double? = s.toDoubleOrNull()
-
-public fun deserializeChar(s: String): Char? = s.singleOrNull()
-
-public fun deserializeStr(s: String): String = s
-
-public fun deserializeString(s: String): String = s
-
-public fun deserializeBytes(s: ByteArray): ByteArray = s
-
-public fun deserializeByteBuf(s: ByteArray): ByteArray = s
-
-@HiddenFromObjC
-public fun <T> deserializeOption(s: String, parse: (String) -> T): T? = if (s.isEmpty()) null else parse(s)
-
-public fun deserializeUnit(): Unit = Unit
-
-public fun deserializeUnitStruct(name: String): Unit = Unit
-
-@HiddenFromObjC
-public fun <T> deserializeNewtypeStruct(name: String, s: String, parse: (String) -> T): T = parse(s)
-
-public fun deserializeSeq(s: String, delimiter: Char = ','): List<String> = s.split(delimiter)
-
-public fun deserializeTuple(s: String, delimiter: Char = ','): List<String> = s.split(delimiter)
-
-public fun deserializeTupleStruct(name: String, s: String, delimiter: Char = ','): List<String> = s.split(delimiter)
-
-@HiddenFromObjC
-public fun deserializeMap(pairs: List<Pair<String, String>>): Map<String, String> = pairs.toMap()
-
-public fun deserializeStruct(name: String, fields: Map<String, String>): Map<String, String> = fields
-
-public fun deserializeIdentifier(s: String): String = s
-
-public fun deserializeEnum(s: String): String = s
-
-public fun deserializeIgnoredAny(s: String): Unit = Unit
-
-public fun variantSeed(name: String): String = name
-
-public fun unitVariant(name: String): String = name
-
-public fun newtypeVariantSeed(name: String): String = name
-
-public fun tupleVariant(name: String): String = name
-
-public fun structVariant(name: String): String = name
-
-@HiddenFromObjC
-public fun nextElementSeed(iter: Iterator<String>): String? = if (iter.hasNext()) iter.next() else null
-
-@HiddenFromObjC
-public fun nextKeySeed(iter: Iterator<String>): String? = if (iter.hasNext()) iter.next() else null
-
-@HiddenFromObjC
-public fun nextValueSeed(iter: Iterator<String>): String? = if (iter.hasNext()) iter.next() else null
-
-public fun custom(msg: String): DeserializeError = DeserializeError(null, DeserializeErrorKind.Message(msg))
-
-public fun fmt(err: DeserializeError): String = err.toString()
+private fun parseUnsigned(field: String): ULong? =
+    runCatching {
+        if (field.startsWith("0x") || field.startsWith("0X")) {
+            field.substring(2).toULong(16)
+        } else {
+            field.toULong()
+        }
+    }.getOrNull()

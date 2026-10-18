@@ -358,15 +358,9 @@ public class ByteRecord : Iterable<ByteArray> {
      * Deserialize this record into [T] using the given [deserializer].
      */
     public fun <T> deserialize(
-        deserializer: kotlinx.serialization.DeserializationStrategy<T>,
+        deserializer: io.github.kotlinmania.serdecore.de.Deserialize<T>,
         headers: ByteRecord? = null,
-    ): Result<T> = CsvDeserializer.deserialize(this, deserializer, headers)
-
-    /**
-     * Deserialize this record into [T] using the default serializer.
-     */
-    public inline fun <reified T> deserialize(headers: ByteRecord? = null): Result<T> =
-        deserialize(kotlinx.serialization.serializer(), headers)
+    ): Result<T> = deserializeByteRecord(this, deserializer, headers)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

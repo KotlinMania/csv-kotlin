@@ -3,6 +3,7 @@
 
 package io.github.kotlinmania.csv
 
+import io.github.kotlinmania.serdecore.ser.Serialize
 import kotlin.native.HiddenFromObjC
 
 /**
@@ -124,6 +125,8 @@ public class Writer internal constructor(
     private var expectedFieldCount: Int? = null
     private var fieldCountInCurrentRecord: Int = 0
     private var recordStarted: Boolean = false
+    private var recordStartBufferLen: Int = 0
+    private var headerState: HeaderState = if (hasHeaders) HeaderState.Write else HeaderState.None
 
     public fun flush(): Result<Unit> = Result.success(Unit)
 
@@ -162,6 +165,8 @@ public class Writer internal constructor(
         expectedFieldCount = null
         fieldCountInCurrentRecord = 0
         recordStarted = false
+        recordStartBufferLen = 0
+        headerState = if (hasHeaders) HeaderState.Write else HeaderState.None
     }
 
     public fun checkFieldCount(count: Int): Result<Unit> {
@@ -185,32 +190,16 @@ public class Writer internal constructor(
 
     public fun writeByteRecord(record: ByteRecord): Result<Unit> {
         val count = record.len()
-        if (!flexible) {
-            val expected = expectedFieldCount
-            if (expected != null && count != expected) {
-                return Result.failure(
-                    CsvError(
-                        ErrorKind.UnequalLengths(
-                            null,
-                            expected.toULong(),
-                            count.toULong(),
-                        ),
-                    ),
-                )
-            }
-            expectedFieldCount = count
-        }
-
+        recordStartBufferLen = buffer.size
+        recordStarted = true
         for (i in 0 until count) {
             if (i > 0) {
                 buffer.add(delimiter)
             }
             writeFieldBytes(record[i]!!, isSingleField = (count == 1))
         }
-        writeTerminator()
-        fieldCountInCurrentRecord = 0
-        recordStarted = false
-        return Result.success(Unit)
+        fieldCountInCurrentRecord = count
+        return writeTerminator()
     }
 
     public fun writeRecord(record: StringRecord): Result<Unit> =
@@ -219,106 +208,43 @@ public class Writer internal constructor(
     public fun writeRecord(record: Iterable<CharSequence>): Result<Unit> {
         val fields = record.toList()
         val count = fields.size
-        if (!flexible) {
-            val expected = expectedFieldCount
-            if (expected != null && count != expected) {
-                return Result.failure(
-                    CsvError(
-                        ErrorKind.UnequalLengths(
-                            null,
-                            expected.toULong(),
-                            count.toULong(),
-                        ),
-                    ),
-                )
-            }
-            expectedFieldCount = count
+        if (count == 0 && recordStarted) {
+            return writeTerminator()
         }
-
+        recordStartBufferLen = buffer.size
+        recordStarted = true
         for (i in 0 until count) {
             if (i > 0) {
                 buffer.add(delimiter)
             }
             writeFieldBytes(fields[i].toString().encodeToByteArray(), isSingleField = (count == 1))
         }
-        writeTerminator()
-        fieldCountInCurrentRecord = 0
-        recordStarted = false
-        return Result.success(Unit)
+        fieldCountInCurrentRecord = count
+        return writeTerminator()
     }
 
     public fun writeRecord(record: Array<String>): Result<Unit> =
         writeRecord(record.asIterable())
 
     /**
-     * Serialize a value using the given [serializer].
-     * If headers are enabled and no records have been written yet, headers are automatically written.
+     * Serialize a single record using Serde.
+     *
+     * If headers are enabled and a header has not been written yet, then
+     * this will attempt to serialize the headers of the record first.
      */
-    public fun <T> serialize(
-        serializer: kotlinx.serialization.SerializationStrategy<T>,
-        value: T,
-    ): Result<Unit> {
-        if (hasHeaders && !recordStarted && buffer.isEmpty()) {
-            val hRes = CsvSerializer.serializeHeader(this, serializer.descriptor)
-            if (hRes.isFailure) return Result.failure(hRes.exceptionOrNull()!!)
+    public fun <S : Serialize> serialize(record: S): Result<Unit> {
+        if (headerState == HeaderState.Write) {
+            val wroteHeader = serializeHeader(this, record).getOrElse { return Result.failure(it) }
+            if (wroteHeader) {
+                writeTerminator().getOrElse { return Result.failure(it) }
+                headerState = HeaderState.DidWrite
+            } else {
+                headerState = HeaderState.DidNotWrite
+            }
         }
-        return CsvSerializer.serialize(this, serializer, value)
-    }
-
-    /**
-     * Serialize a value using the default serializer.
-     */
-    public inline fun <reified T> serialize(value: T): Result<Unit> =
-        serialize(kotlinx.serialization.serializer(), value)
-
-    /**
-     * Serialize a value along with its struct headers.
-     */
-    public fun <T> serializeWithHeaders(
-        serializer: kotlinx.serialization.SerializationStrategy<T>,
-        value: T,
-    ): Result<Unit> {
-        val hRes = CsvSerializer.serializeHeader(this, serializer.descriptor)
-        if (hRes.isFailure) return Result.failure(hRes.exceptionOrNull()!!)
-        return CsvSerializer.serialize(this, serializer, value)
-    }
-
-    /**
-     * Serialize a value along with its struct headers using the default serializer.
-     */
-    public inline fun <reified T> serializeWithHeaders(value: T): Result<Unit> =
-        serializeWithHeaders(kotlinx.serialization.serializer(), value)
-
-    /**
-     * Serialize a value without writing struct headers.
-     */
-    public fun <T> serializeNoHeaders(
-        serializer: kotlinx.serialization.SerializationStrategy<T>,
-        value: T,
-    ): Result<Unit> = CsvSerializer.serialize(this, serializer, value)
-
-    /**
-     * Serialize a value without writing struct headers using the default serializer.
-     */
-    public inline fun <reified T> serializeNoHeaders(value: T): Result<Unit> =
-        serializeNoHeaders(kotlinx.serialization.serializer(), value)
-
-    /**
-     * Serialize a 128-bit value without headers.
-     */
-    public fun serializeNoHeaders128(value: Long): Result<Unit> {
-        writeField(value.toString().encodeToByteArray())
-        return endRecord()
-    }
-
-    /**
-     * Serialize a tuple of items as a record.
-     */
-    public fun serializeTuple(items: List<Any?>): Result<Unit> {
-        for (item in items) {
-            writeField(item?.toString()?.encodeToByteArray() ?: byteArrayOf())
-        }
-        return endRecord()
+        serialize(this, record).getOrElse { return Result.failure(it) }
+        writeTerminator().getOrElse { return Result.failure(it) }
+        return Result.success(Unit)
     }
 
     public fun drop() {
@@ -329,17 +255,24 @@ public class Writer internal constructor(
         writeField(field.toString().encodeToByteArray())
 
     public fun writeField(bytes: ByteArray): Result<Unit> {
-        if (recordStarted && fieldCountInCurrentRecord > 0) {
+        if (!recordStarted) {
+            recordStartBufferLen = buffer.size
+            recordStarted = true
+        } else if (fieldCountInCurrentRecord > 0) {
             buffer.add(delimiter)
         }
         writeFieldBytes(bytes)
         fieldCountInCurrentRecord++
-        recordStarted = true
         return Result.success(Unit)
     }
 
     public fun writeFieldImpl(bytes: ByteArray): Result<Unit> {
+        if (!recordStarted) {
+            recordStartBufferLen = buffer.size
+            recordStarted = true
+        }
         writeFieldBytes(bytes)
+        fieldCountInCurrentRecord++
         return Result.success(Unit)
     }
 
@@ -348,32 +281,26 @@ public class Writer internal constructor(
         return Result.success(Unit)
     }
 
-    public fun writeTerminatorIntoBuffer(): Result<Unit> {
-        writeTerminator()
+    public fun writeTerminatorIntoBuffer(): Result<Unit> = writeTerminator()
+
+    public fun writeTerminator(): Result<Unit> {
+        val check = checkFieldCount(fieldCountInCurrentRecord)
+        if (check.isFailure) return check
+        if (fieldCountInCurrentRecord == 1 && buffer.size == recordStartBufferLen) {
+            buffer.add(quote)
+            buffer.add(quote)
+        }
+        when (terminator) {
+            is Terminator.CRLF -> buffer.add('\n'.code.toByte())
+            is Terminator.Any -> buffer.add(terminator.byte)
+        }
+        fieldCountInCurrentRecord = 0
+        recordStarted = false
+        recordStartBufferLen = buffer.size
         return Result.success(Unit)
     }
 
-    public fun endRecord(): Result<Unit> {
-        if (!flexible) {
-            val expected = expectedFieldCount
-            if (expected != null && fieldCountInCurrentRecord != expected) {
-                return Result.failure(
-                    CsvError(
-                        ErrorKind.UnequalLengths(
-                            null,
-                            expected.toULong(),
-                            fieldCountInCurrentRecord.toULong(),
-                        ),
-                    ),
-                )
-            }
-            expectedFieldCount = fieldCountInCurrentRecord
-        }
-        writeTerminator()
-        fieldCountInCurrentRecord = 0
-        recordStarted = false
-        return Result.success(Unit)
-    }
+    public fun endRecord(): Result<Unit> = writeTerminator()
 
     private fun writeFieldBytes(field: ByteArray, isSingleField: Boolean = false) {
         val shouldQuote = shouldQuote(field, isSingleField)
@@ -427,13 +354,6 @@ public class Writer internal constructor(
             }
         }
         return false
-    }
-
-    private fun writeTerminator() {
-        when (terminator) {
-            is Terminator.CRLF -> buffer.add('\n'.code.toByte())
-            is Terminator.Any -> buffer.add(terminator.byte)
-        }
     }
 
     public companion object {

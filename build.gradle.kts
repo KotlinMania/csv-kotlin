@@ -111,7 +111,8 @@ val intellijCoroutinesVersion =
 val projectDependencyHandler = project.dependencies
 configurations.configureEach {
     if (name.contains("androidDeviceTest", ignoreCase = true) ||
-        name.contains("AndroidRuntimeClasspath", ignoreCase = true)) {
+        name.contains("AndroidRuntimeClasspath", ignoreCase = true)
+    ) {
         exclude(group = "org.jetbrains", module = "annotations")
     }
     if (name == "swiftExportClasspath") {

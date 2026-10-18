@@ -3,7 +3,6 @@ package io.github.kotlinmania.csv
 import io.github.kotlinmania.serde.SerdeResult
 import io.github.kotlinmania.serdecore.de.Deserialize
 import io.github.kotlinmania.serdecore.de.Deserializer
-import io.github.kotlinmania.serdecore.de.nullableDeserialize
 
 /**
  * A custom Serde deserializer for possibly invalid optional fields.
@@ -20,7 +19,7 @@ public fun <D : Deserializer, T> invalidOption(
     deserializer: D,
     deserialize: Deserialize<T>,
 ): SerdeResult<T?> =
-    nullableDeserialize(deserialize).deserialize(deserializer).fold(
+    deserialize.deserialize(deserializer).fold(
         onSuccess = { SerdeResult.success(it) },
         onFailure = { SerdeResult.success(null) },
     )

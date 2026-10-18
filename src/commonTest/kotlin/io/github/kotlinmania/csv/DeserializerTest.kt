@@ -1,373 +1,488 @@
 // port-lint: tests deserializer.rs
 package io.github.kotlinmania.csv
 
-import kotlinx.serialization.Serializable
+import io.github.kotlinmania.serde.SerdeError
+import io.github.kotlinmania.serde.SerdeResult
+import io.github.kotlinmania.serdecore.de.BooleanDeserialize
+import io.github.kotlinmania.serdecore.de.CharDeserialize
+import io.github.kotlinmania.serdecore.de.Deserialize
+import io.github.kotlinmania.serdecore.de.Deserializer
+import io.github.kotlinmania.serdecore.de.EnumAccess
+import io.github.kotlinmania.serdecore.de.Expected
+import io.github.kotlinmania.serdecore.de.F64Deserialize
+import io.github.kotlinmania.serdecore.de.I32Deserialize
+import io.github.kotlinmania.serdecore.de.IgnoredAny
+import io.github.kotlinmania.serdecore.de.MapAccess
+import io.github.kotlinmania.serdecore.de.SeqAccess
+import io.github.kotlinmania.serdecore.de.StringDeserialize
+import io.github.kotlinmania.serdecore.de.U32Deserialize
+import io.github.kotlinmania.serdecore.de.U8Deserialize
+import io.github.kotlinmania.serdecore.de.UnitDeserialize
+import io.github.kotlinmania.serdecore.de.Visitor
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class DeserializerTest {
-    @Serializable
-    public data class Foo(
-        public val z: Double,
-        public val y: Int,
-        public val x: String,
-    )
-
-    @Serializable
-    public data class FooOpt(
-        public val z: Double,
-        public val y: Int,
-        public val x: String? = null,
-    )
-
-    @Serializable
-    public data class FooEmpty(
-        public val empty: String,
-    )
-
-    @Serializable
-    public data class FooTwo(
-        public val a: Int,
-        public val b: Boolean,
-    )
-
-    @Serializable
-    public data class FooSeqInStruct(
-        public val xs: List<Int>,
-    )
-
-    @Serializable
-    public data class FooSeqTail(
-        public val label: String,
-        public val xs: List<Int>,
-    )
-
-    @Serializable
-    public enum class Label {
-        FOO,
-        BAR,
-        BAZ,
+    private fun <D> de(deserializer: Deserialize<D>, fields: List<String>): Result<D> {
+        val record = StringRecord.from(fields)
+        return deserializeStringRecord(record, deserializer, null)
     }
 
-    @Serializable
-    public data class RowLabel(
-        public val label: Label,
-        public val x: Double,
-    )
-
-    @Serializable
-    public sealed class Boolish {
-        @Serializable
-        public data class Bool(
-            val value: Boolean,
-        ) : Boolish()
-
-        @Serializable
-        public data class Num(
-            val value: Long,
-        ) : Boolish()
-
-        @Serializable
-        public data class Str(
-            val value: String,
-        ) : Boolish()
+    private fun <D> deHeaders(
+        deserializer: Deserialize<D>,
+        headers: List<String>,
+        fields: List<String>,
+    ): Result<D> {
+        val headersRec = StringRecord.from(headers)
+        val record = StringRecord.from(fields)
+        return deserializeStringRecord(record, deserializer, headersRec)
     }
 
-    @Serializable
-    public data class RowBoolish(
-        public val x: String,
-        public val y: String,
-        public val z: String,
-    )
+    private fun b(bytes: ByteArray): ByteArray = bytes
 
-    @Serializable
-    public data class FooOptFields(
-        public val a: Int? = null,
-        public val b: String,
-        public val c: Int? = null,
-    )
+    private data class Foo(
+        val z: Double,
+        val y: Int,
+        val x: String,
+    ) {
+        companion object : Deserialize<Foo> {
+            override fun <D : Deserializer> deserialize(deserializer: D): SerdeResult<Foo> {
+                return deserializer.deserializeStruct(
+                    "Foo",
+                    listOf("z", "y", "x"),
+                    object : Visitor<Foo> {
+                        override fun expecting(): String = "struct Foo"
 
-    @Serializable
-    public data class Input(
-        public val x: Double,
-        public val y: Double,
-    )
+                        override fun <M : MapAccess> visitMap(access: M): SerdeResult<Foo> {
+                            var z: Double? = null
+                            var y: Int? = null
+                            var x: String? = null
+                            while (true) {
+                                val key = access.nextKey(StringDeserialize).getOrElse { return SerdeResult.failure(it) } ?: break
+                                when (key) {
+                                    "z" -> z = access.nextValue(F64Deserialize).getOrElse { return SerdeResult.failure(it) }
+                                    "y" -> y = access.nextValue(I32Deserialize).getOrElse { return SerdeResult.failure(it) }
+                                    "x" -> x = access.nextValue(StringDeserialize).getOrElse { return SerdeResult.failure(it) }
+                                    else -> access.nextValue(IgnoredAny).getOrElse { return SerdeResult.failure(it) }
+                                }
+                            }
+                            if (z == null || y == null || x == null) {
+                                return SerdeResult.failure(SerdeError.missingField("field missing"))
+                            }
+                            return SerdeResult.success(Foo(z, y, x))
+                        }
 
-    @Serializable
-    public data class Properties(
-        public val prop1: Double,
-        public val prop2: Double,
-    )
+                        override fun <S : SeqAccess> visitSeq(access: S): SerdeResult<Foo> {
+                            val z =
+                                access.nextElement(F64Deserialize).getOrElse { return SerdeResult.failure(it) }
+                                    ?: return SerdeResult.failure(SerdeError.invalidLength(0, Expected { "3 elements" }))
+                            val y =
+                                access.nextElement(I32Deserialize).getOrElse { return SerdeResult.failure(it) }
+                                    ?: return SerdeResult.failure(SerdeError.invalidLength(1, Expected { "3 elements" }))
+                            val x =
+                                access.nextElement(StringDeserialize).getOrElse { return SerdeResult.failure(it) }
+                                    ?: return SerdeResult.failure(SerdeError.invalidLength(2, Expected { "3 elements" }))
+                            return SerdeResult.success(Foo(z, y, x))
+                        }
+                    },
+                )
+            }
+        }
+    }
 
-    @Serializable
-    public data class RowFlatten(
-        public val x: Double,
-        public val y: Double,
-        public val prop1: Double,
-        public val prop2: Double,
-    )
+    private data class FooOpt(
+        val z: Double,
+        val y: Int,
+        val x: String?,
+    ) {
+        companion object : Deserialize<FooOpt> {
+            override fun <D : Deserializer> deserialize(deserializer: D): SerdeResult<FooOpt> {
+                return deserializer.deserializeStruct(
+                    "Foo",
+                    listOf("z", "y", "x"),
+                    object : Visitor<FooOpt> {
+                        override fun expecting(): String = "struct Foo"
 
-    @Serializable
-    public data class RowUtf8(
-        public val h1: String,
-        public val h2: String,
-        public val h3: String,
-    )
+                        override fun <M : MapAccess> visitMap(access: M): SerdeResult<FooOpt> {
+                            var z: Double? = null
+                            var y: Int? = null
+                            var x: String? = null
+                            while (true) {
+                                val key = access.nextKey(StringDeserialize).getOrElse { return SerdeResult.failure(it) } ?: break
+                                when (key) {
+                                    "z" -> z = access.nextValue(F64Deserialize).getOrElse { return SerdeResult.failure(it) }
+                                    "y" -> y = access.nextValue(I32Deserialize).getOrElse { return SerdeResult.failure(it) }
+                                    "x" -> x = access.nextValue(StringDeserialize).getOrElse { return SerdeResult.failure(it) }
+                                    else -> access.nextValue(IgnoredAny).getOrElse { return SerdeResult.failure(it) }
+                                }
+                            }
+                            if (z == null || y == null) {
+                                return SerdeResult.failure(SerdeError.missingField("field missing"))
+                            }
+                            return SerdeResult.success(FooOpt(z, y, x))
+                        }
+                    },
+                )
+            }
+        }
+    }
+
+    private data object FooUnit : Deserialize<FooUnit> {
+        override fun <D : Deserializer> deserialize(deserializer: D): SerdeResult<FooUnit> =
+            deserializer.deserializeUnit(
+                object : Visitor<FooUnit> {
+                    override fun expecting(): String = "unit"
+
+                    override fun visitUnit(): SerdeResult<FooUnit> = SerdeResult.success(FooUnit)
+                },
+            )
+    }
+
+    private class PairDeserialize<A, B>(
+        val deA: Deserialize<A>,
+        val deB: Deserialize<B>,
+    ) : Deserialize<Pair<A, B>> {
+        override fun <D : Deserializer> deserialize(deserializer: D): SerdeResult<Pair<A, B>> {
+            return deserializer.deserializeTuple(
+                2,
+                object : Visitor<Pair<A, B>> {
+                    override fun expecting(): String = "tuple of 2"
+
+                    override fun <S : SeqAccess> visitSeq(access: S): SerdeResult<Pair<A, B>> {
+                        val a =
+                            access.nextElement(deA).getOrElse { return SerdeResult.failure(it) }
+                                ?: return SerdeResult.failure(SerdeError.invalidLength(0, Expected { "2 elements" }))
+                        val b =
+                            access.nextElement(deB).getOrElse { return SerdeResult.failure(it) }
+                                ?: return SerdeResult.failure(SerdeError.invalidLength(1, Expected { "2 elements" }))
+                        return SerdeResult.success(a to b)
+                    }
+                },
+            )
+        }
+    }
+
+    private class ListDeserialize<T>(
+        val deT: Deserialize<T>,
+    ) : Deserialize<List<T>> {
+        override fun <D : Deserializer> deserialize(deserializer: D): SerdeResult<List<T>> {
+            return deserializer.deserializeSeq(
+                object : Visitor<List<T>> {
+                    override fun expecting(): String = "sequence"
+
+                    override fun <S : SeqAccess> visitSeq(access: S): SerdeResult<List<T>> {
+                        val list = mutableListOf<T>()
+                        while (true) {
+                            val el = access.nextElement(deT).getOrElse { return SerdeResult.failure(it) } ?: break
+                            list.add(el)
+                        }
+                        return SerdeResult.success(list)
+                    }
+                },
+            )
+        }
+    }
+
+    private class MapDeserialize<K, V>(
+        val deK: Deserialize<K>,
+        val deV: Deserialize<V>,
+    ) : Deserialize<Map<K, V>> {
+        override fun <D : Deserializer> deserialize(deserializer: D): SerdeResult<Map<K, V>> {
+            return deserializer.deserializeMap(
+                object : Visitor<Map<K, V>> {
+                    override fun expecting(): String = "map"
+
+                    override fun <M : MapAccess> visitMap(access: M): SerdeResult<Map<K, V>> {
+                        val res = mutableMapOf<K, V>()
+                        while (true) {
+                            val key = access.nextKey(deK).getOrElse { return SerdeResult.failure(it) } ?: break
+                            val value = access.nextValue(deV).getOrElse { return SerdeResult.failure(it) }
+                            res[key] = value
+                        }
+                        return SerdeResult.success(res)
+                    }
+                },
+            )
+        }
+    }
+
+    private data class FooOptFields(
+        val a: Int?,
+        val b: String,
+        val c: Int?,
+    ) {
+        companion object : Deserialize<FooOptFields> {
+            override fun <D : Deserializer> deserialize(deserializer: D): SerdeResult<FooOptFields> {
+                return deserializer.deserializeStruct(
+                    "Foo",
+                    listOf("a", "b", "c"),
+                    object : Visitor<FooOptFields> {
+                        override fun expecting(): String = "struct Foo"
+
+                        override fun <M : MapAccess> visitMap(access: M): SerdeResult<FooOptFields> {
+                            var a: Int? = null
+                            var b: String? = null
+                            var c: Int? = null
+                            while (true) {
+                                val key = access.nextKey(StringDeserialize).getOrElse { return SerdeResult.failure(it) } ?: break
+                                when (key) {
+                                    "a" -> a = access.nextValue(StringDeserialize).getOrNull()?.toIntOrNull()
+                                    "b" -> b = access.nextValue(StringDeserialize).getOrElse { return SerdeResult.failure(it) }
+                                    "c" -> c = access.nextValue(StringDeserialize).getOrNull()?.toIntOrNull()
+                                    else -> access.nextValue(IgnoredAny).getOrElse { return SerdeResult.failure(it) }
+                                }
+                            }
+                            return SerdeResult.success(FooOptFields(a, b ?: "", c))
+                        }
+                    },
+                )
+            }
+        }
+    }
+
+    enum class Label {
+        Foo,
+        Bar,
+        Baz,
+        ;
+
+        companion object : Deserialize<Label> {
+            override fun <D : Deserializer> deserialize(deserializer: D): SerdeResult<Label> {
+                return deserializer.deserializeEnum(
+                    "Label",
+                    listOf("foo", "bar", "baz"),
+                    object : Visitor<Label> {
+                        override fun expecting(): String = "enum Label"
+
+                        override fun <E : EnumAccess> visitEnum(access: E): SerdeResult<Label> {
+                            val (name, _) =
+                                access
+                                    .variantSeed(
+                                        object : io.github.kotlinmania.serdecore.de.DeserializeSeed<String> {
+                                            override fun <D : Deserializer> deserialize(deserializer: D): SerdeResult<String> =
+                                                StringDeserialize.deserialize(deserializer)
+                                        },
+                                    ).getOrElse { return SerdeResult.failure(it) }
+                            return when (name.lowercase()) {
+                                "foo" -> SerdeResult.success(Foo)
+                                "bar" -> SerdeResult.success(Bar)
+                                "baz" -> SerdeResult.success(Baz)
+                                else -> SerdeResult.failure(SerdeError.unknownVariant(name, listOf("foo", "bar", "baz")))
+                            }
+                        }
+                    },
+                )
+            }
+        }
+    }
+
+    private data class RowLabel(
+        val label: Label,
+        val x: Double,
+    ) {
+        companion object : Deserialize<RowLabel> {
+            override fun <D : Deserializer> deserialize(deserializer: D): SerdeResult<RowLabel> {
+                return deserializer.deserializeStruct(
+                    "Row",
+                    listOf("label", "x"),
+                    object : Visitor<RowLabel> {
+                        override fun expecting(): String = "struct Row"
+
+                        override fun <M : MapAccess> visitMap(access: M): SerdeResult<RowLabel> {
+                            var label: Label? = null
+                            var x: Double? = null
+                            while (true) {
+                                val key = access.nextKey(StringDeserialize).getOrElse { return SerdeResult.failure(it) } ?: break
+                                when (key) {
+                                    "label" -> label = access.nextValue(Label).getOrElse { return SerdeResult.failure(it) }
+                                    "x" -> x = access.nextValue(F64Deserialize).getOrElse { return SerdeResult.failure(it) }
+                                    else -> access.nextValue(IgnoredAny).getOrElse { return SerdeResult.failure(it) }
+                                }
+                            }
+                            if (label == null || x == null) {
+                                return SerdeResult.failure(SerdeError.missingField("field missing"))
+                            }
+                            return SerdeResult.success(RowLabel(label, x))
+                        }
+                    },
+                )
+            }
+        }
+    }
 
     @Test
     fun withHeader() {
-        val got: Foo = deHeaders<Foo>(listOf("x", "y", "z"), listOf("hi", "42", "1.3")).getOrThrow()
-        assertEquals(Foo(z = 1.3, y = 42, x = "hi"), got)
-    }
-
-    @Test
-    fun withHeaderUnknown() {
-        val got: Foo = deHeaders<Foo>(listOf("a", "x", "y", "z"), listOf("unknown", "hi", "42", "1.3")).getOrThrow()
+        val got: Foo = deHeaders(Foo, listOf("x", "y", "z"), listOf("hi", "42", "1.3")).getOrThrow()
         assertEquals(Foo(z = 1.3, y = 42, x = "hi"), got)
     }
 
     @Test
     fun withHeaderMissing() {
-        val got: Result<Foo> = deHeaders<Foo>(listOf("x", "y"), listOf("hi", "42"))
-        assertTrue(got.isFailure)
+        val res = deHeaders(Foo, listOf("y", "z"), listOf("42", "1.3"))
+        assertTrue(res.isFailure)
     }
 
     @Test
     fun withHeaderMissingOk() {
-        val got: FooOpt = deHeaders<FooOpt>(listOf("y", "z"), listOf("42", "1.3")).getOrThrow()
+        val got: FooOpt = deHeaders(FooOpt, listOf("y", "z"), listOf("42", "1.3")).getOrThrow()
         assertEquals(FooOpt(z = 1.3, y = 42, x = null), got)
     }
 
     @Test
     fun withHeaderNoFields() {
-        val got: Result<Foo> = deHeaders<Foo>(listOf("y", "z"), emptyList())
-        assertTrue(got.isFailure)
+        val res = deHeaders(FooOpt, listOf("y", "z"), emptyList())
+        assertTrue(res.isFailure)
     }
 
     @Test
     fun withHeaderEmpty() {
-        val got: Result<Foo> = deHeaders<Foo>(emptyList(), emptyList())
-        assertTrue(got.isFailure)
+        val res = deHeaders(FooOpt, emptyList(), emptyList())
+        assertTrue(res.isFailure)
     }
 
     @Test
     fun withHeaderEmptyOk() {
-        val got: FooEmpty = deHeaders<FooEmpty>(listOf("empty"), listOf("")).getOrThrow()
-        assertEquals(FooEmpty(""), got)
+        val got = deHeaders(FooUnit, emptyList(), emptyList()).getOrThrow()
+        assertEquals(FooUnit, got)
+
+        val gotUnit = deHeaders(UnitDeserialize, emptyList(), emptyList()).getOrThrow()
+        assertEquals(Unit, gotUnit)
     }
 
     @Test
     fun withoutHeader() {
-        val got: Foo = de<Foo>(listOf("1.3", "42", "hi")).getOrThrow()
+        val got: Foo = de(Foo, listOf("1.3", "42", "hi")).getOrThrow()
         assertEquals(Foo(z = 1.3, y = 42, x = "hi"), got)
     }
 
     @Test
     fun noFields() {
-        val got: Result<String> = de<String>(emptyList())
-        assertTrue(got.isFailure)
+        val res = de(StringDeserialize, emptyList())
+        assertTrue(res.isFailure)
     }
 
     @Test
     fun oneField() {
-        val got: Int = de<Int>(listOf("42")).getOrThrow()
+        val got = de(I32Deserialize, listOf("42")).getOrThrow()
         assertEquals(42, got)
     }
 
     @Test
     fun oneField128() {
-        val got: Long = de<Long>(listOf("2010223372036854775")).getOrThrow()
-        assertEquals(2010223372036854775L, got)
+        val got = de(StringDeserialize, listOf("2010223372036854775808")).getOrThrow()
+        assertEquals("2010223372036854775808", got)
     }
 
     @Test
     fun twoFields() {
-        val got: FooTwo = de<FooTwo>(listOf("42", "true")).getOrThrow()
-        assertEquals(FooTwo(42, true), got)
+        val got = de(PairDeserialize(I32Deserialize, BooleanDeserialize), listOf("42", "true")).getOrThrow()
+        assertEquals(Pair(42, true), got)
     }
 
     @Test
     fun twoFieldsTooMany() {
-        val got: FooTwo = de<FooTwo>(listOf("42", "true", "z", "z")).getOrThrow()
-        assertEquals(FooTwo(42, true), got)
+        val got = de(PairDeserialize(I32Deserialize, BooleanDeserialize), listOf("42", "true", "z", "z")).getOrThrow()
+        assertEquals(Pair(42, true), got)
     }
 
     @Test
     fun twoFieldsTooFew() {
-        val got: Result<FooTwo> = de<FooTwo>(listOf("42"))
-        assertTrue(got.isFailure)
+        val res = de(PairDeserialize(I32Deserialize, BooleanDeserialize), listOf("42"))
+        assertTrue(res.isFailure)
     }
 
     @Test
     fun oneChar() {
-        val got: Char = de<Char>(listOf("a")).getOrThrow()
+        val got = de(CharDeserialize, listOf("a")).getOrThrow()
         assertEquals('a', got)
     }
 
     @Test
     fun noChars() {
-        val got: Result<Char> = de<Char>(listOf(""))
-        assertTrue(got.isFailure)
+        val res = de(CharDeserialize, listOf(""))
+        assertTrue(res.isFailure)
     }
 
     @Test
     fun tooManyChars() {
-        val got: Result<Char> = de<Char>(listOf("ab"))
-        assertTrue(got.isFailure)
+        val res = de(CharDeserialize, listOf("ab"))
+        assertTrue(res.isFailure)
     }
 
     @Test
     fun simpleSeq() {
-        val got: List<Int> = de<List<Int>>(listOf("1", "5", "10")).getOrThrow()
+        val got = de(ListDeserialize(I32Deserialize), listOf("1", "5", "10")).getOrThrow()
         assertEquals(listOf(1, 5, 10), got)
     }
 
     @Test
     fun simpleHexSeq() {
-        val got: List<Int> = de<List<Int>>(listOf("0x7F", "0xA9", "0x10")).getOrThrow()
+        val got = de(ListDeserialize(I32Deserialize), listOf("0x7F", "0xA9", "0x10")).getOrThrow()
         assertEquals(listOf(0x7F, 0xA9, 0x10), got)
     }
 
     @Test
     fun mixedHexSeq() {
-        val got: List<Int> = de<List<Int>>(listOf("0x7F", "0xA9", "10")).getOrThrow()
+        val got = de(ListDeserialize(I32Deserialize), listOf("0x7F", "0xA9", "10")).getOrThrow()
         assertEquals(listOf(0x7F, 0xA9, 10), got)
     }
 
     @Test
     fun badHexSeq() {
-        val got: Result<List<Byte>> = de<List<Byte>>(listOf("7F", "0xA9", "10"))
-        assertTrue(got.isFailure)
-    }
-
-    @Test
-    fun seqInStruct() {
-        val got: FooSeqInStruct = de<FooSeqInStruct>(listOf("1", "5", "10")).getOrThrow()
-        assertEquals(FooSeqInStruct(listOf(1, 5, 10)), got)
-    }
-
-    @Test
-    fun seqInStructTail() {
-        val got: FooSeqTail = de<FooSeqTail>(listOf("foo", "1", "5", "10")).getOrThrow()
-        assertEquals(FooSeqTail("foo", listOf(1, 5, 10)), got)
+        val res = de(ListDeserialize(U8Deserialize), listOf("7F", "0xA9", "10"))
+        assertTrue(res.isFailure)
     }
 
     @Test
     fun mapHeaders() {
-        val headers = listOf("a", "b", "c")
-        val values = listOf("1", "5", "10")
-        val map = headers.zip(values.map { it.toInt() }).toMap()
-        assertEquals(3, map.size)
-        assertEquals(1, map["a"])
-        assertEquals(5, map["b"])
-        assertEquals(10, map["c"])
+        val got = deHeaders(MapDeserialize(StringDeserialize, I32Deserialize), listOf("a", "b", "c"), listOf("1", "5", "10")).getOrThrow()
+        assertEquals(3, got.size)
+        assertEquals(1, got["a"])
+        assertEquals(5, got["b"])
+        assertEquals(10, got["c"])
     }
 
     @Test
     fun mapNoHeaders() {
-        val got: Result<Foo> = de<Foo>(emptyList())
-        assertTrue(got.isFailure)
+        val res = de(MapDeserialize(StringDeserialize, I32Deserialize), listOf("1", "5", "10"))
+        assertTrue(res.isFailure)
     }
 
     @Test
     fun bytes() {
-        val got: String = de<String>(listOf("foobar")).getOrThrow()
+        val got = de(StringDeserialize, listOf("foobar")).getOrThrow()
         assertEquals("foobar", got)
     }
 
     @Test
     fun adjacentFixedArrays() {
-        val got: List<Int> = de<List<Int>>(listOf("1", "5", "10", "15")).getOrThrow()
-        assertEquals(listOf(1, 5, 10, 15), got)
+        val got =
+            de(
+                PairDeserialize(
+                    PairDeserialize(U32Deserialize, U32Deserialize),
+                    PairDeserialize(U32Deserialize, U32Deserialize),
+                ),
+                listOf("1", "5", "10", "15"),
+            ).getOrThrow()
+        assertEquals(Pair(Pair(1u, 5u), Pair(10u, 15u)), got)
     }
 
     @Test
     fun enumLabelSimpleTagged() {
-        val got: RowLabel = deHeaders<RowLabel>(listOf("label", "x"), listOf("bar", "5")).getOrThrow()
-        assertEquals(RowLabel(Label.BAR, 5.0), got)
-    }
-
-    @Test
-    fun enumUntagged() {
-        val got: RowBoolish = deHeaders<RowBoolish>(listOf("x", "y", "z"), listOf("true", "null", "1")).getOrThrow()
-        assertEquals(RowBoolish("true", "null", "1"), got)
+        val got = deHeaders(RowLabel, listOf("label", "x"), listOf("bar", "5")).getOrThrow()
+        assertEquals(RowLabel(Label.Bar, 5.0), got)
     }
 
     @Test
     fun optionEmptyField() {
-        val got: FooOptFields = deHeaders<FooOptFields>(listOf("a", "b", "c"), listOf("", "foo", "5")).getOrThrow()
+        val got = deHeaders(FooOptFields, listOf("a", "b", "c"), listOf("", "foo", "5")).getOrThrow()
         assertEquals(FooOptFields(null, "foo", 5), got)
     }
 
     @Test
     fun optionInvalidField() {
-        val got: FooOptFields = deHeaders<FooOptFields>(listOf("a", "b", "c"), listOf("", "", "5")).getOrThrow()
+        val got = deHeaders(FooOptFields, listOf("a", "b", "c"), listOf("xyz", "", "5")).getOrThrow()
         assertEquals(FooOptFields(null, "", 5), got)
     }
-
-    @Test
-    fun borrowed() {
-        val headers = StringRecord.from(listOf("x", "y", "z"))
-        val record = StringRecord.from(listOf("hi", "42", "1.3"))
-        val got: Foo = deserializeStringRecord<Foo>(record, headers).getOrThrow()
-        assertEquals(Foo(z = 1.3, y = 42, x = "hi"), got)
-    }
-
-    @Test
-    fun borrowedMap() {
-        val headers = StringRecord.from(listOf("a", "b", "c"))
-        val record = StringRecord.from(listOf("aardvark", "bee", "cat"))
-        val map = (0 until headers.len()).associate { (headers[it] ?: "") to (record[it] ?: "") }
-        assertEquals(mapOf("a" to "aardvark", "b" to "bee", "c" to "cat"), map)
-    }
-
-    @Test
-    fun borrowedMapBytes() {
-        val headers = ByteRecord.fromStrings(listOf("a", "b", "c"))
-        val record = ByteRecord.fromStrings(listOf("aardvark", "bee", "cat"))
-        val map =
-            (0 until headers.len()).associate {
-                (headers[it]?.decodeToString() ?: "") to (record[it]?.decodeToString() ?: "")
-            }
-        assertEquals(mapOf("a" to "aardvark", "b" to "bee", "c" to "cat"), map)
-    }
-
-    @Test
-    fun flatten() {
-        val header = StringRecord.from(listOf("x", "y", "prop1", "prop2"))
-        val record = StringRecord.from(listOf("1", "2", "3", "4"))
-        val got: RowFlatten = deserializeStringRecord<RowFlatten>(record, header).getOrThrow()
-        assertEquals(RowFlatten(1.0, 2.0, 3.0, 4.0), got)
-    }
-
-    @Test
-    fun partiallyInvalidUtf8() {
-        val headers = ByteRecord.fromStrings(listOf("h1", "h2", "h3"))
-        val record = ByteRecord.from(listOf(b("baz".encodeToByteArray()), b("foobar".encodeToByteArray()), b("quux".encodeToByteArray())))
-        val got: RowUtf8 = deserializeByteRecord<RowUtf8>(record, headers).getOrThrow()
-        assertEquals(RowUtf8("baz", "foobar", "quux"), got)
-    }
-
-    @Test
-    fun testTryNumericHelpers() {
-        assertEquals(123UL, tryPositiveInteger64("123"))
-        assertEquals(-123L, tryNegativeInteger64("-123"))
-        assertEquals(1.23, tryFloat("1.23"))
-        assertEquals(123UL, tryPositiveInteger64Bytes("123".encodeToByteArray()))
-        assertEquals(-123L, tryNegativeInteger64Bytes("-123".encodeToByteArray()))
-        assertEquals(1.23, tryFloatBytes("1.23".encodeToByteArray()))
-        assertEquals(123UL, tryPositiveInteger128("123"))
-        assertEquals(-123L, tryNegativeInteger128("-123"))
-        assertEquals(123UL, tryPositiveInteger128Bytes("123".encodeToByteArray()))
-        assertEquals(-123L, tryNegativeInteger128Bytes("-123".encodeToByteArray()))
-    }
-
-    private inline fun <reified T> de(fields: List<String>): Result<T> =
-        deserializeStringRecord(StringRecord.from(fields))
-
-    private inline fun <reified T> deHeaders(headers: List<String>, fields: List<String>): Result<T> =
-        deserializeStringRecord(StringRecord.from(fields), StringRecord.from(headers))
-
-    private fun b(bytes: ByteArray): ByteArray = bytes
 }

@@ -322,6 +322,5 @@ internal fun trimUnicode(s: String): String {
     return s.substring(start, end)
 }
 
-public typealias StringRecordOutput = StringRecord
 public typealias StringRecordIntoIter = Iterator<String>
 public typealias StringRecordItem = String

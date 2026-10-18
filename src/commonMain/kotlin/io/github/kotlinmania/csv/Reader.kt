@@ -633,5 +633,4 @@ internal enum class ReaderEofState {
     Eof,
 }
 
-public typealias Headers = StringRecord
 public typealias ReaderItem = Result<StringRecord>

@@ -1,4 +1,4 @@
-=== Deep Analysis: tmp/csv/src (rust) -> src/commonMain/kotlin (kotlin) ===
+=== Deep Analysis: tmp/csv/src (rust) -> src/common/commonMain/kotlin (kotlin) ===
 
 Scanning source codebase (rust)...
 Codebase: tmp/csv/src (rust)
@@ -7,7 +7,7 @@ Codebase: tmp/csv/src (rust)
   Most depended: string_record (1 dependents)
 
 Scanning target codebase (kotlin)...
-Codebase: src/commonMain/kotlin (kotlin)
+Codebase: src/common/commonMain/kotlin (kotlin)
   Files: 20
   Total imports: 47
 
@@ -17,7 +17,7 @@ Computing AST similarities...
 === Codebase Comparison Report ===
 
 Source: tmp/csv/src (11 files)
-Target: src/commonMain/kotlin (20 files)
+Target: src/common/commonMain/kotlin (20 files)
 Scoring invariant: FnSim is required function body/parameter similarity. Class/type and symbol parity are reported beside it; whole-file shape is diagnostic only.
 
 Matched:   11 files

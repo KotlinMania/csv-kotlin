@@ -16,11 +16,11 @@ For every Rust crate this repo owns (under `tmp/`), this file lists every **cros
 
 | package | module | inbound use sites | distinct caller crates | distinct caller repos | codex sites |
 |---|---|---:|---:|---:|---:|
-| `csv` | `csv` | 5 | 2 | 2 | 0 |
+| `csv` | `csv` | 7 | 3 | 3 | 0 |
 
 ## `csv`
 
-### Inbound symbols (4 distinct, 5 total `use` sites)
+### Inbound symbols (6 distinct, 7 total `use` sites)
 
 Sorted by codex demand, then total demand. The first symbols are the priority queue for porting `csv`.
 
@@ -40,3 +40,11 @@ Sorted by codex demand, then total demand. The first symbols are the priority qu
 #### `csv::Csv` — 1 site(s) (0 codex, 1 other, 1 caller crates)
 
 - `rama-http-kotlin/rama-http` `src/service/web/endpoint/response/mod.rs:44` — `pub_use csv::Csv`
+
+#### `csv::Error` — 1 site(s) (0 codex, 1 other, 1 caller crates)
+
+- `criterion-kotlin/criterion` `src/error.rs:2` — `use csv::Error as CsvError`
+
+#### `csv::Writer` — 1 site(s) (0 codex, 1 other, 1 caller crates)
+
+- `criterion-kotlin/criterion` `src/csv_report.rs:5` — `use csv::Writer`

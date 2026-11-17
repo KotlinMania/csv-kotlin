@@ -4,16 +4,16 @@ Based on AST analysis, here are the concrete next steps.
 
 ## Summary
 
-- **Serde Modernization:** Completely replaced `kotlinx.serialization` across all main code and test suites with canonical sibling port `io.github.kotlinmania:serde-kotlin:0.1.11` and `serde-test-kotlin:0.1.1`.
-- **Transliteration & Parity:**
-  - `Serializer.kt` & `Deserializer.kt`: 1:1 transliteration against upstream Rust Serde data-model, supporting `Serialize`, `Deserialize`, `Serializer`, `Deserializer`, `SeqAccess`, `MapAccess`, and variant access.
-  - `lib.rs`: Split into focused components (`QuoteStyle.kt`, `Terminator.kt`, `Trim.kt`, `InvalidOption.kt`) adhering to AGENTS.md §3 (no `Lib.kt` or `Mod.kt`).
-  - `Writer.kt` & `Reader.kt`: Native `serialize` and `deserialize` methods wired to Serde data models.
-- **Verification:**
-  - `./gradlew test`: 100% passed across all targets (JVM, JS Node, Wasm-WASI Node, macOS ARM64).
-  - Swift Export: Local SPM package built and `swift test` passed.
-  - `./gradlew build`: Full target build gate successfully verified with 0 errors across all multiplatform targets.
-  - KtLint & Detekt: Code style and linting passed cleanly.
+- **Files Present:** 10/11 (90.9%)
+- **Function parity:** 482/555 matched (target 772) — 86.8%
+- **Class/type parity:** 51/71 matched (target 102) — 71.8%
+- **Combined symbol parity:** 533/626 matched (target 874) — 85.1%
+- **Average inline-code cosine:** 0.31 (function body across 10 matched files)
+- **Average documentation cosine:** 0.46 (doc text across 10 matched files)
+- **Cheat-zeroed Files:** 0
+- **Critical Issues:** 8 files with <0.60 function similarity
+- **Needs Review:** 0 files with 0.60-0.84 function similarity
+- **Excellent:** 2 files with >=0.85 function similarity
 
 ## Priority 1: Fix Incomplete High-Dependency Files
 

@@ -97,7 +97,7 @@ public class StringRecord private constructor(
         val trimmed = StringRecord(record.asSlice().size, record.len())
         trimmed.setPosition(record.position()?.copy())
         for (i in 0 until record.len()) {
-            val field = this[i] ?: ""
+            val field = this[i].orEmpty()
             trimmed.pushField(trimUnicode(field))
         }
         this.record.clear()

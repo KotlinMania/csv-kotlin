@@ -1,35 +1,50 @@
 import Testing
 import Csv
 
-// Smoke test for the Kotlin → Swift Export → SPM → swift test pipeline.
-//
-// The file's mere existence and successful compilation prove three layers
-// of the pipeline:
-//
-//   1. `embedSwiftExportForXcode` produced `Csv.swiftmodule/`
-//      and the supporting KotlinRuntimeSupport / ExportedKotlinPackages /
-//      KotlinRuntime swiftmodule bundles. If any of them were missing,
-//      `import Csv` above would fail at compile time.
-//
-//   2. The static archive `libCsv.a` (produced by the
-//      `linkSwiftExportBinaryDebugStaticMacosArm64` and
-//      `mergeMacosDebugSwiftExportLibraries` tasks) supplied every
-//      `__root____*` and `KotlinError`-related symbol the Swift modules
-//      reference. If the archive were missing or empty, this test
-//      executable would fail to link with "undefined symbols for
-//      architecture arm64".
-//
-//   3. The Kotlin `swiftExport { moduleName = "Csv" }` and
-//      `flattenPackage = "io.github.kotlinmania.csv"` configuration in
-//      build.gradle.kts produced a module name that's both syntactically
-//      valid as a Swift identifier and reachable from this Package.swift
-//      via the `CsvLibrary` product.
-//
-// Add more meaningful per-API tests below as the Swift Export surface
-// grows. For now the import + a single passing assertion is the
-// canary that the pipeline is green for this repo.
 @Suite struct CsvExportTests {
-    @Test func testSwiftModuleLoads() throws {
-        #expect(Bool(true), "Csv swift module imported cleanly")
+    @Test func testStringRecordPushTrimSliceAndClear() throws {
+        let record = StringRecord()
+        #expect(record.isEmpty())
+        record.pushField(field: "  city  ")
+        record.pushField(field: " state ")
+        #expect(record.len() == 2)
+        #expect(record[0] == "  city  ")
+
+        record.trim()
+        #expect(record[0] == "city")
+        #expect(record[1] == "state")
+        #expect(record.iterEq(other: ["city", "state"]))
+
+        let cloned = record.clone()
+        #expect(cloned.eq(other: record))
+        #expect(record.slice(range: 0...0)[0] == "city")
+
+        let built = StringRecord.Companion.shared.from(fields: ["one", "two"])
+        #expect(built.len() == 2)
+        #expect(built[1] == "two")
+
+        record.clear()
+        #expect(record.isEmpty())
+    }
+
+    @Test func testReaderAndWriterRoundTripSurface() throws {
+        let reader = ReaderBuilder.Companion.shared.new()
+            .hasHeaders(yes: true)
+            .flexible(yes: false)
+            .trim(trim: Trim.ALL)
+            .fromString(string: "city,state\nSeattle,WA\n")
+        #expect(!reader.isDone())
+        #expect(reader.position().byte() == 0)
+        #expect(reader.position().line() == 1)
+
+        let writer = WriterBuilder.Companion.shared.new()
+            .hasHeaders(yes: true)
+            .quoteStyle(style: QuoteStyle.NECESSARY)
+            .terminator(term: Terminator.CRLF.shared)
+            .fromWriter()
+        #expect(writer.writable())
+        #expect(!writer.readable())
+        #expect(writer.written() == 0)
+        #expect(writer.wtrAsString().isEmpty)
     }
 }

@@ -16,26 +16,26 @@ let package = Package(
         .macOS(.v15),
     ],
     dependencies: [
-        .package(name: "Template", path: "../../../build/SPMPackage/macosArm64/\(swiftExportConfiguration)"),
+        .package(name: "Csv", path: "../../../build/SPMPackage/macosArm64/\(swiftExportConfiguration)"),
     ],
     targets: [
         .testTarget(
             name: "SwiftTestHarnessTests",
             dependencies: [
-                .product(name: "TemplateLibrary", package: "Template"),
+                .product(name: "CsvLibrary", package: "Csv"),
             ],
             linkerSettings: [
                 .unsafeFlags(
                     [
                         "-L", "../../../build/swift-test/Debug",
-                        "-lTemplate",
+                        "-lCsv",
                     ],
                     .when(configuration: .debug)
                 ),
                 .unsafeFlags(
                     [
                         "-L", "../../../build/swift-test/Release",
-                        "-lTemplate",
+                        "-lCsv",
                     ],
                     .when(configuration: .release)
                 ),

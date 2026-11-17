@@ -217,7 +217,7 @@ class IntegrationTest {
                                 }
                             }
                             return io.github.kotlinmania.serde.SerdeResult
-                                .success(PopRecord(city ?: "", region ?: "", country ?: "", population))
+                                .success(PopRecord(city.orEmpty(), region.orEmpty(), country.orEmpty(), population))
                         }
                     },
                 )
@@ -515,6 +515,7 @@ class IntegrationTest {
         val rdr = Reader.fromString(data)
         val records = rdr.deserialize(PopRecord).toList()
         assertTrue(records[0].isFailure)
+        // Upstream tutorial_read_serde_05_invalid_errored tests stderr of the same example binary on invalid input.
     }
 
     @Test
@@ -569,6 +570,20 @@ class IntegrationTest {
                 .filter { it.isSuccess && it.getOrThrow().toList().contains("MA") }
                 .toList()
         assertEquals(8, matches.size)
+    }
+
+    @Test
+    fun tutorialPipelineSearch01Errored() {
+        val invalidUtf8Csv =
+            "city,region,country,population\nBoston,MA,".encodeToByteArray() +
+                byteArrayOf(0xFF.toByte()) +
+                ",1\n".encodeToByteArray()
+        val rdr = Reader.fromReader(invalidUtf8Csv)
+        val results = rdr.records().toList()
+        assertEquals(1, results.size)
+        assertTrue(results[0].isFailure)
+        val err = results[0].exceptionOrNull()
+        assertTrue(err is CsvError && err.kind() is ErrorKind.Utf8)
     }
 
     @Test
@@ -632,7 +647,7 @@ class IntegrationTest {
     @Test
     fun tutorialPerfSerde02() {
         val rdr = Reader.fromString(smallpop)
-        val count = rdr.deserialize(PopRecord).filter { it.isSuccess }.count()
+        val count = rdr.deserialize(PopRecord).count { it.isSuccess }
         assertEquals(10, count)
     }
 
@@ -645,4 +660,9 @@ class IntegrationTest {
         }
         assertEquals(10, count)
     }
+
+    // Rust test parity notes (§6):
+    // - tutorial_perf_core_01: exercises the separate csv-core crate example binary, which is not part of csv-kotlin.
+    // - no_infinite_loop_on_io_errors: relies on a custom impl std::io::Read returning Err(io::Error);
+    //   Kotlin Reader reads in-memory ByteArray/String buffers without a blocking std::io::Read trait.
 }

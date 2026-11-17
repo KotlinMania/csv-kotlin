@@ -17,29 +17,9 @@ class SerializerTest {
                 override fun <Ok> serialize(serializer: Serializer<Ok>) = serializer.serializeBool(v)
             }
 
-        private fun s(v: Byte): Serialize =
-            object : Serialize {
-                override fun <Ok> serialize(serializer: Serializer<Ok>) = serializer.serializeI8(v)
-            }
-
-        private fun s(v: Short): Serialize =
-            object : Serialize {
-                override fun <Ok> serialize(serializer: Serializer<Ok>) = serializer.serializeI16(v)
-            }
-
         private fun s(v: Int): Serialize =
             object : Serialize {
                 override fun <Ok> serialize(serializer: Serializer<Ok>) = serializer.serializeI32(v)
-            }
-
-        private fun s(v: Long): Serialize =
-            object : Serialize {
-                override fun <Ok> serialize(serializer: Serializer<Ok>) = serializer.serializeI64(v)
-            }
-
-        private fun s(v: ULong): Serialize =
-            object : Serialize {
-                override fun <Ok> serialize(serializer: Serializer<Ok>) = serializer.serializeU64(v)
             }
 
         private fun sI128(v: String): Serialize =

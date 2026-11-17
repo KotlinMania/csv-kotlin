@@ -14,6 +14,7 @@ import io.github.kotlinmania.serdecore.de.I32Deserialize
 import io.github.kotlinmania.serdecore.de.IgnoredAny
 import io.github.kotlinmania.serdecore.de.MapAccess
 import io.github.kotlinmania.serdecore.de.SeqAccess
+import io.github.kotlinmania.serdecore.de.SeqElement
 import io.github.kotlinmania.serdecore.de.StringDeserialize
 import io.github.kotlinmania.serdecore.de.U32Deserialize
 import io.github.kotlinmania.serdecore.de.U8Deserialize
@@ -75,14 +76,20 @@ class DeserializerTest {
 
                         override fun <S : SeqAccess> visitSeq(access: S): SerdeResult<Foo> {
                             val z =
-                                access.nextElement(F64Deserialize).getOrElse { return SerdeResult.failure(it) }
-                                    ?: return SerdeResult.failure(SerdeError.invalidLength(0, Expected { "3 elements" }))
+                                when (val el = access.nextElement(F64Deserialize).getOrElse { return SerdeResult.failure(it) }) {
+                                    is SeqElement.Some -> el.value
+                                    SeqElement.None -> return SerdeResult.failure(SerdeError.invalidLength(0, Expected { "3 elements" }))
+                                }
                             val y =
-                                access.nextElement(I32Deserialize).getOrElse { return SerdeResult.failure(it) }
-                                    ?: return SerdeResult.failure(SerdeError.invalidLength(1, Expected { "3 elements" }))
+                                when (val el = access.nextElement(I32Deserialize).getOrElse { return SerdeResult.failure(it) }) {
+                                    is SeqElement.Some -> el.value
+                                    SeqElement.None -> return SerdeResult.failure(SerdeError.invalidLength(1, Expected { "3 elements" }))
+                                }
                             val x =
-                                access.nextElement(StringDeserialize).getOrElse { return SerdeResult.failure(it) }
-                                    ?: return SerdeResult.failure(SerdeError.invalidLength(2, Expected { "3 elements" }))
+                                when (val el = access.nextElement(StringDeserialize).getOrElse { return SerdeResult.failure(it) }) {
+                                    is SeqElement.Some -> el.value
+                                    SeqElement.None -> return SerdeResult.failure(SerdeError.invalidLength(2, Expected { "3 elements" }))
+                                }
                             return SerdeResult.success(Foo(z, y, x))
                         }
                     },
@@ -151,11 +158,15 @@ class DeserializerTest {
 
                     override fun <S : SeqAccess> visitSeq(access: S): SerdeResult<Pair<A, B>> {
                         val a =
-                            access.nextElement(deA).getOrElse { return SerdeResult.failure(it) }
-                                ?: return SerdeResult.failure(SerdeError.invalidLength(0, Expected { "2 elements" }))
+                            when (val el = access.nextElement(deA).getOrElse { return SerdeResult.failure(it) }) {
+                                is SeqElement.Some -> el.value
+                                SeqElement.None -> return SerdeResult.failure(SerdeError.invalidLength(0, Expected { "2 elements" }))
+                            }
                         val b =
-                            access.nextElement(deB).getOrElse { return SerdeResult.failure(it) }
-                                ?: return SerdeResult.failure(SerdeError.invalidLength(1, Expected { "2 elements" }))
+                            when (val el = access.nextElement(deB).getOrElse { return SerdeResult.failure(it) }) {
+                                is SeqElement.Some -> el.value
+                                SeqElement.None -> return SerdeResult.failure(SerdeError.invalidLength(1, Expected { "2 elements" }))
+                            }
                         return SerdeResult.success(a to b)
                     }
                 },
@@ -174,8 +185,10 @@ class DeserializerTest {
                     override fun <S : SeqAccess> visitSeq(access: S): SerdeResult<List<T>> {
                         val list = mutableListOf<T>()
                         while (true) {
-                            val el = access.nextElement(deT).getOrElse { return SerdeResult.failure(it) } ?: break
-                            list.add(el)
+                            when (val el = access.nextElement(deT).getOrElse { return SerdeResult.failure(it) }) {
+                                is SeqElement.Some -> list.add(el.value)
+                                SeqElement.None -> break
+                            }
                         }
                         return SerdeResult.success(list)
                     }
@@ -233,7 +246,7 @@ class DeserializerTest {
                                     else -> access.nextValue(IgnoredAny).getOrElse { return SerdeResult.failure(it) }
                                 }
                             }
-                            return SerdeResult.success(FooOptFields(a, b ?: "", c))
+                            return SerdeResult.success(FooOptFields(a, b.orEmpty(), c))
                         }
                     },
                 )
@@ -248,6 +261,12 @@ class DeserializerTest {
         ;
 
         companion object : Deserialize<Label> {
+            private val labelNameSeed =
+                object : io.github.kotlinmania.serdecore.de.DeserializeSeed<String> {
+                    override fun <D : Deserializer> deserialize(deserializer: D): SerdeResult<String> =
+                        StringDeserialize.deserialize(deserializer)
+                }
+
             override fun <D : Deserializer> deserialize(deserializer: D): SerdeResult<Label> {
                 return deserializer.deserializeEnum(
                     "Label",
@@ -258,12 +277,8 @@ class DeserializerTest {
                         override fun <E : EnumAccess> visitEnum(access: E): SerdeResult<Label> {
                             val (name, _) =
                                 access
-                                    .variantSeed(
-                                        object : io.github.kotlinmania.serdecore.de.DeserializeSeed<String> {
-                                            override fun <D : Deserializer> deserialize(deserializer: D): SerdeResult<String> =
-                                                StringDeserialize.deserialize(deserializer)
-                                        },
-                                    ).getOrElse { return SerdeResult.failure(it) }
+                                    .variantSeed(labelNameSeed)
+                                    .getOrElse { return SerdeResult.failure(it) }
                             return when (name.lowercase()) {
                                 "foo" -> SerdeResult.success(Foo)
                                 "bar" -> SerdeResult.success(Bar)
@@ -485,4 +500,162 @@ class DeserializerTest {
         val got = deHeaders(FooOptFields, listOf("a", "b", "c"), listOf("xyz", "", "5")).getOrThrow()
         assertEquals(FooOptFields(null, "", 5), got)
     }
+
+    @Test
+    fun withHeaderUnknown() {
+        val denyUnknown =
+            object : Deserialize<Foo> {
+                override fun <D : Deserializer> deserialize(deserializer: D): SerdeResult<Foo> =
+                    deserializer.deserializeStruct(
+                        "Foo",
+                        listOf("z", "y", "x"),
+                        object : Visitor<Foo> {
+                            override fun expecting(): String = "struct Foo"
+
+                            override fun <M : MapAccess> visitMap(access: M): SerdeResult<Foo> {
+                                var z: Double? = null
+                                var y: Int? = null
+                                var x: String? = null
+                                while (true) {
+                                    val key = access.nextKey(StringDeserialize).getOrElse { return SerdeResult.failure(it) } ?: break
+                                    when (key) {
+                                        "z" -> z = access.nextValue(F64Deserialize).getOrElse { return SerdeResult.failure(it) }
+                                        "y" -> y = access.nextValue(I32Deserialize).getOrElse { return SerdeResult.failure(it) }
+                                        "x" -> x = access.nextValue(StringDeserialize).getOrElse { return SerdeResult.failure(it) }
+                                        else -> return SerdeResult.failure(SerdeError.unknownField(key, listOf("z", "y", "x")))
+                                    }
+                                }
+                                val finalZ = z ?: return SerdeResult.failure(SerdeError.missingField("z"))
+                                val finalY = y ?: return SerdeResult.failure(SerdeError.missingField("y"))
+                                val finalX = x ?: return SerdeResult.failure(SerdeError.missingField("x"))
+                                return SerdeResult.success(Foo(z = finalZ, y = finalY, x = finalX))
+                            }
+                        },
+                    )
+            }
+        val res = deHeaders(denyUnknown, listOf("a", "x", "y", "z"), listOf("foo", "hi", "42", "1.3"))
+        assertTrue(res.isFailure)
+    }
+
+    @Test
+    fun seqInStruct() {
+        val seqStruct =
+            object : Deserialize<List<Int>> {
+                override fun <D : Deserializer> deserialize(deserializer: D): SerdeResult<List<Int>> =
+                    deserializer.deserializeStruct(
+                        "Foo",
+                        listOf("xs"),
+                        object : Visitor<List<Int>> {
+                            override fun expecting(): String = "struct Foo"
+
+                            override fun <S : SeqAccess> visitSeq(access: S): SerdeResult<List<Int>> {
+                                val xs =
+                                    when (val elem = access.nextElement(ListDeserialize(I32Deserialize)).getOrElse { return SerdeResult.failure(it) }) {
+                                        is SeqElement.Some -> elem.value
+                                        is SeqElement.None -> return SerdeResult.failure(SerdeError.missingField("xs"))
+                                    }
+                                return SerdeResult.success(xs)
+                            }
+                        },
+                    )
+            }
+        val got = de(seqStruct, listOf("1", "5", "10")).getOrThrow()
+        assertEquals(listOf(1, 5, 10), got)
+    }
+
+    @Test
+    fun seqInStructTail() {
+        val seqTail =
+            object : Deserialize<Pair<String, List<Int>>> {
+                override fun <D : Deserializer> deserialize(deserializer: D): SerdeResult<Pair<String, List<Int>>> =
+                    deserializer.deserializeStruct(
+                        "Foo",
+                        listOf("label", "xs"),
+                        object : Visitor<Pair<String, List<Int>>> {
+                            override fun expecting(): String = "struct Foo"
+
+                            override fun <S : SeqAccess> visitSeq(access: S): SerdeResult<Pair<String, List<Int>>> {
+                                val label =
+                                    when (val elem = access.nextElement(StringDeserialize).getOrElse { return SerdeResult.failure(it) }) {
+                                        is SeqElement.Some -> elem.value
+                                        is SeqElement.None -> return SerdeResult.failure(SerdeError.missingField("label"))
+                                    }
+                                val xs =
+                                    when (val elem = access.nextElement(ListDeserialize(I32Deserialize)).getOrElse { return SerdeResult.failure(it) }) {
+                                        is SeqElement.Some -> elem.value
+                                        is SeqElement.None -> return SerdeResult.failure(SerdeError.missingField("xs"))
+                                    }
+                                return SerdeResult.success(label to xs)
+                            }
+                        },
+                    )
+            }
+        val got = de(seqTail, listOf("foo", "1", "5", "10")).getOrThrow()
+        assertEquals("foo" to listOf(1, 5, 10), got)
+    }
+
+    @Test
+    fun partiallyInvalidUtf8() {
+        val bytesDeserialize =
+            object : Deserialize<List<Byte>> {
+                override fun <D : Deserializer> deserialize(deserializer: D): SerdeResult<List<Byte>> =
+                    deserializer.deserializeBytes(
+                        object : Visitor<List<Byte>> {
+                            override fun expecting(): String = "byte buffer"
+
+                            override fun visitBytes(v: ByteArray): SerdeResult<List<Byte>> = SerdeResult.success(v.toList())
+                        },
+                    )
+            }
+        val rowDeserialize =
+            object : Deserialize<Triple<String, List<Byte>, String>> {
+                override fun <D : Deserializer> deserialize(deserializer: D): SerdeResult<Triple<String, List<Byte>, String>> =
+                    deserializer.deserializeStruct(
+                        "Row",
+                        listOf("h1", "h2", "h3"),
+                        object : Visitor<Triple<String, List<Byte>, String>> {
+                            override fun expecting(): String = "struct Row"
+
+                            override fun <M : MapAccess> visitMap(access: M): SerdeResult<Triple<String, List<Byte>, String>> {
+                                var h1: String? = null
+                                var h2: List<Byte>? = null
+                                var h3: String? = null
+                                while (true) {
+                                    val key = access.nextKey(StringDeserialize).getOrElse { return SerdeResult.failure(it) } ?: break
+                                    when (key) {
+                                        "h1" -> h1 = access.nextValue(StringDeserialize).getOrElse { return SerdeResult.failure(it) }
+                                        "h2" -> h2 = access.nextValue(bytesDeserialize).getOrElse { return SerdeResult.failure(it) }
+                                        "h3" -> h3 = access.nextValue(StringDeserialize).getOrElse { return SerdeResult.failure(it) }
+                                        else -> access.nextValue(IgnoredAny).getOrElse { return SerdeResult.failure(it) }
+                                    }
+                                }
+                                val r1 = h1 ?: return SerdeResult.failure(SerdeError.missingField("h1"))
+                                val r2 = h2 ?: return SerdeResult.failure(SerdeError.missingField("h2"))
+                                val r3 = h3 ?: return SerdeResult.failure(SerdeError.missingField("h3"))
+                                return SerdeResult.success(Triple(r1, r2, r3))
+                            }
+                        },
+                    )
+            }
+        val headers = ByteRecord.from(listOf("h1".encodeToByteArray(), "h2".encodeToByteArray(), "h3".encodeToByteArray()))
+        val rawMid =
+            byteArrayOf(
+                'f'.code.toByte(),
+                'o'.code.toByte(),
+                'o'.code.toByte(),
+                0xFF.toByte(),
+                'b'.code.toByte(),
+                'a'.code.toByte(),
+                'r'.code.toByte(),
+            )
+        val record = ByteRecord.from(listOf(b("baz".encodeToByteArray()), rawMid, b("quux".encodeToByteArray())))
+        val got = deserializeByteRecord(record, rowDeserialize, headers).getOrThrow()
+        assertEquals(Triple("baz", rawMid.toList(), "quux"), got)
+    }
+
+    // Rust test parity notes (§6):
+    // - enum_untagged: relies on #[serde(untagged)] buffered Content deserialization generated by serde_derive.
+    // - borrowed, borrowed_map, borrowed_map_bytes: test Rust 'de zero-copy borrow lifetimes (&'a str / &'a [u8]);
+    //   Kotlin Strings and ByteArrays are heap values rather than borrowed record slices.
+    // - flatten: relies on #[serde(flatten)] map-merging codegen from serde_derive.
 }

@@ -163,8 +163,8 @@ public class Reader internal constructor(
     public fun seekRaw(pos: Position): Result<Unit> = seek(pos)
 
     public fun byteHeaders(): Result<ByteRecord> {
-        if (cachedHeaders != null) {
-            return Result.success(cachedHeaders!!.clone())
+        cachedHeaders?.let { existing ->
+            return Result.success(existing.clone())
         }
         val savedOffset = offset
         val savedLine = line
@@ -573,6 +573,7 @@ public class DeserializeRecordsIter<D> internal constructor(
     override fun hasNext(): Boolean = stringIter.hasNext()
 
     override fun next(): Result<D> {
+        if (!hasNext()) throw NoSuchElementException("No more records")
         if (!headersRead) {
             headers = rdr.headers().getOrNull()
             headersRead = true

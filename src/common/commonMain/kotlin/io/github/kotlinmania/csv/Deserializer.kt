@@ -10,6 +10,7 @@ import io.github.kotlinmania.serdecore.de.Deserializer
 import io.github.kotlinmania.serdecore.de.EnumAccess
 import io.github.kotlinmania.serdecore.de.MapAccess
 import io.github.kotlinmania.serdecore.de.SeqAccess
+import io.github.kotlinmania.serdecore.de.SeqElement
 import io.github.kotlinmania.serdecore.de.Unexpected
 import io.github.kotlinmania.serdecore.de.VariantAccess
 import io.github.kotlinmania.serdecore.de.Visitor
@@ -301,11 +302,11 @@ internal class DeRecordWrap<T : DeRecord>(
 
     override fun sizeHint(): Int? = null
 
-    override fun <T> nextElementSeed(seed: DeserializeSeed<T>): SerdeResult<T?> =
+    override fun <T> nextElementSeed(seed: DeserializeSeed<T>): SerdeResult<SeqElement<T>> =
         if (peekField() == null) {
-            SerdeResult.success(null)
+            SerdeResult.success(SeqElement.None)
         } else {
-            seed.deserialize(this).map { it }
+            seed.deserialize(this).map { SeqElement.Some(it) }
         }
 
     override fun <K> nextKeySeed(seed: DeserializeSeed<K>): SerdeResult<K?> {
@@ -378,7 +379,7 @@ internal class DeStringRecord(
     override fun <V> inferDeserialize(visitor: Visitor<V>): SerdeResult<V> {
         val x =
             nextField().getOrElse {
-                val err = it as? DeserializeError ?: error(DeserializeErrorKind.Message(it.message ?: ""))
+                val err = it as? DeserializeError ?: error(DeserializeErrorKind.Message(it.message.orEmpty()))
                 return SerdeResult.failure(SerdeError.custom(err.message))
             }
         return when {
@@ -456,7 +457,7 @@ internal class DeByteRecord(
     override fun <V> inferDeserialize(visitor: Visitor<V>): SerdeResult<V> {
         val x =
             nextFieldBytes().getOrElse {
-                val err = it as? DeserializeError ?: error(DeserializeErrorKind.Message(it.message ?: ""))
+                val err = it as? DeserializeError ?: error(DeserializeErrorKind.Message(it.message.orEmpty()))
                 return SerdeResult.failure(SerdeError.custom(err.message))
             }
         val s = runCatching { x.decodeToString() }.getOrNull()

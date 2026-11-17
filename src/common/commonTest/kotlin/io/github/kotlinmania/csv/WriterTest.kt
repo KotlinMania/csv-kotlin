@@ -104,28 +104,9 @@ class WriterTest {
         assertEquals("a,b,c\na\n", wtr.asString())
     }
 
-    private class MarkWriteAndFlush(
-        val buffer: MutableList<Byte> = mutableListOf(),
-    ) {
-        fun intoString(): String = buffer.toByteArray().decodeToString()
-
-        fun write(data: ByteArray): Int {
-            buffer.add('>'.code.toByte())
-            for (b in data) {
-                buffer.add(b)
-            }
-            buffer.add('<'.code.toByte())
-            return data.size
-        }
-
-        fun flush() {
-            buffer.add('!'.code.toByte())
-        }
-    }
-
+    // Partial port of writer.rs::full_buffer_should_not_flush_underlying: Writer buffers in memory rather than wrapping an external io::Write sink to observe intermediate flush calls.
     @Test
     fun fullBufferShouldNotFlushUnderlying() {
-        val underlying = MarkWriteAndFlush()
         val wtr = WriterBuilder.new().bufferCapacity(4).fromWriter()
         wtr.writeByteRecord(ByteRecord.fromStrings(listOf("a", "b")))
         wtr.writeByteRecord(ByteRecord.fromStrings(listOf("c", "d")))

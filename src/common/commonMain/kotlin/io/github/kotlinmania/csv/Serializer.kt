@@ -283,7 +283,7 @@ internal class SeHeader(
         }
 
     fun handleScalar(name: String): SerdeResult<Unit> =
-        when (val s = state) {
+        when (state) {
             is SeHeaderState.Write -> {
                 state = SeHeaderState.ErrorIfWrite(errorScalarOutsideStruct(name))
                 SerdeResult.success(Unit)
@@ -292,13 +292,13 @@ internal class SeHeader(
                 SerdeResult.success(Unit)
             }
             is SeHeaderState.EncounteredStructField -> {
-                SerdeResult.failure(SerdeError.custom(errorScalarOutsideStruct(name).message ?: ""))
+                SerdeResult.failure(SerdeError.custom(errorScalarOutsideStruct(name).message.orEmpty()))
             }
         }
 
     fun handleContainer(name: String): SerdeResult<Unit> =
         if (state is SeHeaderState.InStructField) {
-            SerdeResult.failure(SerdeError.custom(errorContainerInsideStruct(name).message ?: ""))
+            SerdeResult.failure(SerdeError.custom(errorContainerInsideStruct(name).message.orEmpty()))
         } else {
             SerdeResult.success(Unit)
         }
@@ -450,7 +450,7 @@ internal class SeHeader(
         val oldState = state
         state = SeHeaderState.EncounteredStructField
         if (oldState is SeHeaderState.ErrorIfWrite) {
-            return SerdeResult.failure(SerdeError.custom(oldState.err.message ?: ""))
+            return SerdeResult.failure(SerdeError.custom(oldState.err.message.orEmpty()))
         }
         val writeRes = wtr.writeField(key)
         if (writeRes.isFailure) {
